@@ -22,6 +22,10 @@ This folder contains product, architecture, and operational documentation for Sh
 - [assets/release-notes.svg](./assets/release-notes.svg)
 - [assets/release-rollback.svg](./assets/release-rollback.svg)
 - [assets/release-uiux-concept.svg](./assets/release-uiux-concept.svg)
+- [assets/consumer-value-map.svg](./assets/consumer-value-map.svg)
+- [assets/user-journeys.svg](./assets/user-journeys.svg)
+- [assets/shinon-vs-alternatives.svg](./assets/shinon-vs-alternatives.svg)
+- [assets/vision-roadmap.svg](./assets/vision-roadmap.svg)
 
 ### Preview
 

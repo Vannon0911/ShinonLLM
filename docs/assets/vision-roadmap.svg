@@ -1,0 +1,29 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="700" viewBox="0 0 1200 700" role="img" aria-labelledby="title desc">
+  <title id="title">ShinonLLM Vision Roadmap</title>
+  <desc id="desc">Roadmap showing now, next, and target state milestones.</desc>
+  <rect width="1200" height="700" fill="#0f172a"/>
+  <text x="70" y="90" fill="#f8fafc" font-size="42" font-family="Segoe UI, Arial" font-weight="700">Ziel und Vision als Roadmap</text>
+  <text x="70" y="130" fill="#94a3b8" font-size="22" font-family="Segoe UI, Arial">Vom stabilen Kern zur vollstaendigen lokalen Runtime</text>
+
+  <line x1="120" y1="360" x2="1080" y2="360" stroke="#334155" stroke-width="8"/>
+
+  <circle cx="220" cy="360" r="26" fill="#22c55e"/>
+  <circle cx="620" cy="360" r="26" fill="#f59e0b"/>
+  <circle cx="980" cy="360" r="26" fill="#60a5fa"/>
+
+  <rect x="120" y="190" width="220" height="130" rx="14" fill="#052e16" stroke="#166534"/>
+  <text x="145" y="235" fill="#dcfce7" font-size="24" font-family="Segoe UI, Arial" font-weight="700">Jetzt</text>
+  <text x="145" y="270" fill="#bbf7d0" font-size="18" font-family="Segoe UI, Arial">Gates + Routing + Release-Flow</text>
+
+  <rect x="500" y="190" width="250" height="130" rx="14" fill="#451a03" stroke="#b45309"/>
+  <text x="525" y="235" fill="#ffedd5" font-size="24" font-family="Segoe UI, Arial" font-weight="700">Als Nächstes</text>
+  <text x="525" y="270" fill="#fed7aa" font-size="18" font-family="Segoe UI, Arial">SQLite + Restart-Persistenz + Decay</text>
+
+  <rect x="860" y="190" width="260" height="130" rx="14" fill="#172554" stroke="#1d4ed8"/>
+  <text x="885" y="235" fill="#dbeafe" font-size="24" font-family="Segoe UI, Arial" font-weight="700">Vision</text>
+  <text x="885" y="270" fill="#bfdbfe" font-size="18" font-family="Segoe UI, Arial">Consumer-taugliche lokale AI-Plattform</text>
+
+  <text x="150" y="430" fill="#e2e8f0" font-size="20" font-family="Segoe UI, Arial">Stabiler Kern</text>
+  <text x="540" y="430" fill="#e2e8f0" font-size="20" font-family="Segoe UI, Arial">Memory-Haerte</text>
+  <text x="900" y="430" fill="#e2e8f0" font-size="20" font-family="Segoe UI, Arial">Produktreife</text>
+</svg>

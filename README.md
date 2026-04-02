@@ -1,67 +1,113 @@
 ﻿# ShinonLLM
 
-## Für Nutzer (Consumer) - zuerst
+## Consumer-Teil (Produkt zuerst)
 
-### Was ist ShinonLLM?
-ShinonLLM ist dein lokaler KI-Begleiter fuer fokussierte, nachvollziehbare Antworten.
-Der Kernansatz ist einfach: Das System steuert die Logik, das Sprachmodell formuliert nur den Text.
+### Was ShinonLLM ist
+ShinonLLM ist eine lokale Web-App fuer KI-gestuetzte Antworten mit einem klaren Grundprinzip:
+**Die Runtime steuert die Logik, das Modell formuliert den Text.**
 
-### Was bringt dir das konkret?
-- Mehr Konsistenz: Antworten springen weniger, weil Regeln und Kontext sauber gesteuert werden.
-- Mehr Kontrolle: Du kannst lokal arbeiten, statt alles in einen Blackbox-Cloud-Flow zu schieben.
-- Mehr Verlaesslichkeit: Entscheidungen im System sind besser pruefbar und reproduzierbar.
+Das ist kein kosmetischer Satz. Das ist der Unterschied zwischen "mal gut, mal wild" und einem System, das sich in echten Workflows kontrolliert verhaelt.
 
-### Fuer wen ist das gemacht?
-- Creator, Solopreneure und kleine Teams, die einen lokalen KI-Workflow wollen.
-- Nutzer, die keine KI wollen, die heute A und morgen B behauptet.
-- Menschen, die lieber ein klares Produkt als ein Prompt-Spielzeug wollen.
+![Consumer Value Map](./docs/assets/consumer-value-map.svg)
+
+### Warum das fuer dich wichtig ist
+Viele KI-Setups wirken am Anfang stark und kippen dann in drei Probleme: unklare Entscheidungen, driftendes Memory und schlechte Nachvollziehbarkeit.
+ShinonLLM setzt genau dort an.
+
+1. **Mehr Kontrolle**
+- Lokaler Betrieb ist vorgesehen.
+- Verhalten wird ueber Runtime-Regeln und klare Pfade gesteuert.
+
+2. **Mehr Konsistenz**
+- Antworten entstehen aus kuratiertem Kontext statt aus wachsender Prompt-Unordnung.
+- Zentrale Pruefpfade reduzieren "heute so, morgen anders".
+
+3. **Mehr Verlaesslichkeit**
+- Verifikation ist Teil des Workflows (`verify:backend`, Frontend-Build).
+- Releases folgen einem dokumentierten Prozess statt Ad-hoc-Pushes.
+
+### Konkrete Nutzbeispiele
+
+![Nutzbeispiele](./docs/assets/user-journeys.svg)
+
+#### Beispiel 1: Content-Entwurf mit stabilem Stil
+Du willst Texte, die sich wie aus einem Guss lesen.
+ShinonLLM hilft, weil die Runtime den Kontext sauber haelt und nicht jeder Turn den Stil neu verwuerfelt.
+
+#### Beispiel 2: Support-Antworten mit weniger Chaos
+Du brauchst kurze, klare Antworten fuer wiederkehrende Themen.
+Durch strukturierte Eingabepfade und Guardrails sinkt das Risiko von inkonsistenten Antworten.
+
+#### Beispiel 3: Lokale Quick-QA ohne Cloud-Zwang
+Du willst schnell pruefen, ob dein Prompt/Use Case funktioniert.
+Mit lokalem `llama.cpp`-Setup kannst du direkt testen, ohne von externen Plattformbedingungen abzuhaengen.
+
+### Was ShinonLLM besser macht (ohne Marketing-Maerchen)
+
+![ShinonLLM vs Alternatives](./docs/assets/shinon-vs-alternatives.svg)
+
+ShinonLLM ist nicht "in allem besser".
+ShinonLLM ist in den **kritischen Runtime-Themen** besser aufgestellt:
+
+- **Entscheidungsautoritaet:** Runtime-first statt model-first.
+- **Memory-Kontrolle:** contract-gated statt impliziter Nebenwirkungen.
+- **Reproduzierbarkeit:** Replay/Gates statt "best effort".
+- **Release-Disziplin:** dokumentierter Prozess statt Trial-and-Error.
 
 ### Person hinter dem Projekt
 Ich bin **Felix Vannon**.
-Ich baue ShinonLLM als bewusstes Gegenmodell zu unkontrollierten Chat-Setups: weniger Hype, mehr Substanz, mehr Verantwortung im Runtime-Layer.
+ShinonLLM ist mein Versuch, KI aus dem Hype-Modus in einen produktiven Modus zu bringen:
+weniger Show, mehr Systemhaerte.
 
 ### Ziel und Vision
-**Ziel:** Eine lokale Web-App, die in Alltag und Arbeit stabil nutzbar ist, nicht nur in Demos.
 
-**Vision:** Ein Consumer-Produkt, bei dem KI nuetzlich bleibt, weil die Plattform klar fuehrt.
-Keine magische Selbsttaeuschung, kein "trust me bro" - sondern ein System, das sich verhalten kann.
+![Vision Roadmap](./docs/assets/vision-roadmap.svg)
+
+**Ziel (nah):**
+Eine lokale Web-App, die in echten Aufgaben stabil nutzbar ist.
+
+**Vision (mittel/lang):**
+Eine consumer-taugliche lokale AI-Plattform, bei der Kontrolle und Nachvollziehbarkeit kein Extra sind, sondern Standard.
 
 ---
 
-## Fuer Entwickler (Technical)
+## Dev-Teil (technisch)
 
 ### Projektphilosophie
 **The runtime thinks, the LLM formulates text.**
 
-Das heisst:
-- Runtime entscheidet ueber Kontext, Regeln, Priorisierung und Memory-Schreiben.
-- Das Modell bekommt ein kuratiertes Paket und produziert Sprachoutput.
-- Fail-closed und Determinismus haben Vorrang vor "sieht cool aus".
+Praktisch bedeutet das:
+- Runtime entscheidet ueber Kontext, Priorisierung und zugelassene Operationen.
+- Model-Output wird eingegrenzt und geprueft.
+- Fail-closed und Determinismus sind keine Nebensache, sondern Kernprinzip.
 
-### Architektur (kurz)
-- `backend/`: HTTP-Entry und Route-Verhalten
-- `orchestrator/`: Contracts, Prompt-Building, Modellrouting, Guardrails
-- `inference/`: Adapter fuer `ollama` und `llama.cpp`
-- `memory/`: Session/Longterm Retrieval- und Store-Logik
-- `telemetry/`: Replay/Hash/Evidence fuer reproduzierbare Pruefungen
+### Architektur
+- `backend/`: HTTP-Entry, Route-Verhalten
+- `orchestrator/`: Contracts, Prompt-Building, Guardrails, Routing
+- `inference/`: Adapter (`ollama`, `llama.cpp`)
+- `memory/`: Session/Longterm-Retrieval und Store-Bausteine
+- `telemetry/`: Replay/Hash/Evidence
 - `tests/`: Gates, Unit, Integration
 
-### Vergleich zu typischen Loesungen
+![Runtime Overview](./docs/assets/runtime-overview.svg)
+
+### Technische Vergleiche zu anderen Loesungen
 
 | Bereich | ShinonLLM | Typische Chat-Wrapper | Typische Agent-Stacks |
 |---|---|---|---|
-| Entscheidungsautoritaet | Runtime-first | oft model-first | haeufig tool-chain-first |
-| Memory Writes | contract-gated | oft implizit | je nach Framework uneinheitlich |
-| Reproduzierbarkeit | Replay/Gates | meist best effort | haeufig schwer nachzuvollziehen |
+| Entscheidungslogik | Runtime-first | oft model-first | haeufig tool-first |
+| Memory-Writes | contract-gated | oft implizit | framework-abhaengig |
+| Reproduzierbarkeit | Replay + Gates | best effort | uneinheitlich |
 | Lokaler Betrieb | explizit vorgesehen | oft cloud-zentriert | gemischt |
-| Produktfokus | Runtime-Produkt | UI-orientierte Huelle | Entwickler-Toolkit |
+| Release-Haerte | Playbook + Gates | oft ad-hoc | team-abhängig |
 
-### Aktueller Produktstand (ehrlich)
-- Runtime-, Contract- und Replay-Basics sind vorhanden.
-- Lokaler `llama.cpp`-Pfad inkl. Quick-QA Setup ist vorbereitet.
-- Memory-Persistenz ueber Restart (SQLite + Decay im produktiven Pfad) ist als naechste Kernstufe definiert.
+### Aktueller Status (ehrlich)
+- Solider Runtime-/Contract-/Gate-Basiskern vorhanden.
+- API-Pfadvereinheitlichung fuer `/api/chat` und `/api/health` ist umgesetzt (kompatible Aliase vorhanden).
+- Lokaler `llama.cpp` Quick-QA Pfad ist dokumentiert und skriptbar.
+- Naechste harte Ausbaustufe bleibt: produktive SQLite-Persistenz + Decay im Laufzeitpfad.
 
-### Schnellstart
+### Quickstart
 Voraussetzung: Node.js LTS
 
 ```powershell
@@ -74,7 +120,7 @@ cd frontend; npm run build; cd ..
 Lokaler `llama.cpp` Setup:
 - [docs/LOCAL_LLAMACPP_SETUP.md](./docs/LOCAL_LLAMACPP_SETUP.md)
 
-GitHub Release Ablauf:
+Release-Ablauf auf GitHub:
 - [docs/GITHUB_RELEASE_PLAYBOOK.md](./docs/GITHUB_RELEASE_PLAYBOOK.md)
 
 ### Dokumentation
@@ -85,7 +131,7 @@ GitHub Release Ablauf:
 - [CHANGELOG.md](./CHANGELOG.md)
 
 ### Source of Truth
-`README.md` ist Einstieg, nicht alleinige technische Wahrheit.
+`README.md` ist Einstieg und Produktdarstellung, nicht alleinige technische Wahrheit.
 
 Autoritative Referenzen:
 - [LLM_ENTRY.md](./LLM_ENTRY.md)
