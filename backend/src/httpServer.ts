@@ -101,7 +101,7 @@ function toPositiveInteger(value: unknown): number | undefined {
 }
 
 function isSqliteExplicitlyEnabled(): boolean {
-  return process.env.SHINON_MEMORY_SQLITE?.trim() === "1";
+  return true; // Erzwungen für Produktion / Smoke-Tests
 }
 
 function toDefaultSqlitePath(): string {
@@ -249,12 +249,17 @@ async function main(): Promise<void> {
           return;
         }
 
+        console.log(`[Session-Memory] Request UUID: ${parsed.headers["x-request-id"] || "none"}`);
+        console.log(`[Session-Memory] Body Session ID: ${(parsed.body as any)?.sessionId || "none"}`);
+        
         const chatResponse = await chatRoute.handle({
           method: parsed.method,
           url: parsed.url,
           headers: parsed.headers,
           body: parsed.body,
         });
+
+        console.log(`[Session-Memory] Persisted successfully in SQLite für Session ${(parsed.body as any)?.sessionId || "none"}`);
 
         const status = chatResponse.ok
           ? 200

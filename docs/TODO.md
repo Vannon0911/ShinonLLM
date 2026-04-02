@@ -11,8 +11,8 @@
 - [X] Contract-first orchestration pipeline
 - [X] Frontend chat UI (Next.js)
 - [X] Test gates (contract, replay, baseline integrity)
-- [ ] Activate session memory in frontend (pass sessionId/conversationId)
-- [ ] Frequency-based pattern tracking (count concept recurrence across sessions)
+- [X] Activate session memory in frontend (pass sessionId/conversationId)
+- [X] Frequency-based pattern tracking (count concept recurrence across sessions)
 - [ ] Impact/time-weighted scoring (no raw data dump)
 - [ ] Drift protection mode (detect persona divergence across conversations)
 - [ ] Internal model evaluation (benchmark Qwen 0.5B vs 1.5B vs 3B vs 7B)

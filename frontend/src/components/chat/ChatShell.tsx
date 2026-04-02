@@ -293,6 +293,16 @@ export function ChatShell({
       return;
     }
 
+    if (normalizedText.length > 25000) {
+      const nextError: ChatUIError = {
+        code: "REQUEST_FAILED",
+        message: "Message too long. Komm mal runter, Digga. Max 25000 Zeichen.",
+      };
+      setError(nextError);
+      emit({ type: "error", error: nextError });
+      return;
+    }
+
     if (isSending) {
       const nextError: ChatUIError = {
         code: "DUPLICATE_SEND",
