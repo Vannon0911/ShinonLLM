@@ -148,7 +148,7 @@ function normalizeRouteDecision(candidate: unknown): BackendRouteDecision {
     failClosed("BACKEND_ROUTE_INVALID", "route decision.model must be a non-empty string");
   }
 
-  if (candidate.options?.live === false) {
+  if ((candidate.options as any)?.live === false) {
     failClosed("BACKEND_ROUTE_INVALID", "route decision.options.live=false is not allowed");
   }
 
@@ -168,19 +168,35 @@ function normalizeRouteDecision(candidate: unknown): BackendRouteDecision {
     failClosed("BACKEND_ROUTE_INVALID", "route decision.options must be a plain object when provided");
   }
 
+  const env = (globalThis as typeof globalThis & {
+    process?: {
+      env?: Record<string, string | undefined>;
+    };
+  }).process?.env;
+
+  const baseUrl = isNonEmptyString(candidate.baseUrl)
+    ? candidate.baseUrl.trim()
+    : backend === "ollama"
+      ? env?.OLLAMA_BASE_URL?.trim() || "http://127.0.0.1:11434"
+      : env?.LLAMA_CPP_BASE_URL?.trim() || "http://127.0.0.1:8000";
+
+  const endpoint = isNonEmptyString(candidate.endpoint)
+    ? candidate.endpoint.trim()
+    : baseUrl;
+
   return Object.freeze({
     backend,
-    fallbackBackend,
+    fallbackBackend: fallbackBackend ?? undefined,
     allowFallback: candidate.allowFallback !== false,
     model: candidate.model.trim(),
     requestId: isNonEmptyString(candidate.requestId) ? candidate.requestId.trim() : undefined,
     sessionId: isNonEmptyString(candidate.sessionId) ? candidate.sessionId.trim() : undefined,
     conversationId: isNonEmptyString(candidate.conversationId) ? candidate.conversationId.trim() : undefined,
-    baseUrl: isNonEmptyString(candidate.baseUrl) ? candidate.baseUrl.trim() : undefined,
-    endpoint: isNonEmptyString(candidate.endpoint) ? candidate.endpoint.trim() : undefined,
+    baseUrl,
+    endpoint,
     timeoutMs: toInteger(candidate.timeoutMs, 0) || undefined,
     stream: candidate.stream !== false,
-    headers: candidate.headers !== undefined ? Object.freeze({ ...candidate.headers }) : undefined,
+    headers: candidate.headers !== undefined ? Object.freeze({ ...(candidate.headers as Record<string, string>) }) : undefined,
     policyId: isNonEmptyString(candidate.policyId) ? candidate.policyId.trim() : undefined,
     options: candidate.options !== undefined ? Object.freeze({ ...candidate.options }) : undefined,
   });

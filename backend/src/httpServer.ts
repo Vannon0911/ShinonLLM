@@ -194,7 +194,7 @@ async function main(): Promise<void> {
   const portCandidate = Number.parseInt(process.env.BACKEND_PORT ?? `${DEFAULT_PORT}`, 10);
   const port = Number.isInteger(portCandidate) && portCandidate > 0 ? portCandidate : DEFAULT_PORT;
   const runtimeBackend =
-    process.env.SHINON_RUNTIME_BACKEND?.trim() === "llamacpp" ? "llamacpp" : "ollama";
+    process.env.SHINON_RUNTIME_BACKEND?.trim() === "ollama" ? "ollama" : "llamacpp";
   const runtimeFallbackBackend =
     runtimeBackend === "llamacpp" ? "ollama" : "llamacpp";
   const runtimeModel = process.env.SHINON_RUNTIME_MODEL?.trim() || "qwen2.5:0.5b";
