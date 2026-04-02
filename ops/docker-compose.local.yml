@@ -137,20 +137,33 @@ services:
     image: ghcr.io/ggerganov/llama.cpp:server
     command:
       - -m
-      - /models/model.gguf
+      - /models/${LLAMACPP_MODEL_FILE:-qwen2.5-0.5b-instruct-q4_k_m.gguf}
       - --port
       - "8000"
       - --host
       - 0.0.0.0
       - -n
       - "512"
+    environment:
+      LLAMACPP_MODEL_FILE: ${LLAMACPP_MODEL_FILE:-qwen2.5-0.5b-instruct-q4_k_m.gguf}
     ports:
       - "8000:8000"
     volumes:
-      - llamacpp-models:/models
+      - ./models:/models
     restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - |
+          fetch("http://127.0.0.1:8000/health").then((response) => {
+            process.exit(response.ok ? 0 : 1);
+          }).catch(() => process.exit(1));
+      interval: 10s
+      timeout: 3s
+      retries: 3
 
 volumes:
   backend-data:
   ollama-data:
-  llamacpp-models:

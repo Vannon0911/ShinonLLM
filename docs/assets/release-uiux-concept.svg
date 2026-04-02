@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="700" viewBox="0 0 1200 700" role="img" aria-labelledby="title desc">
+  <title id="title">UI UX Concept for Release Dashboard</title>
+  <desc id="desc">Conceptual UI panel with prepare validate publish columns and status badges</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fff7ed"/>
+      <stop offset="100%" stop-color="#ffedd5"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="700" fill="url(#bg)" rx="26"/>
+  <text x="60" y="82" fill="#7c2d12" font-size="42" font-family="Segoe UI, Arial, sans-serif" font-weight="700">UI/UX Concept: Release Dashboard</text>
+  <text x="60" y="120" fill="#9a3412" font-size="24" font-family="Segoe UI, Arial, sans-serif">Visual hierarchy for fast status reading in docs and GitHub release pages</text>
+
+  <rect x="60" y="165" width="1080" height="470" rx="20" fill="#ffffff" stroke="#fed7aa" stroke-width="2"/>
+
+  <rect x="90" y="210" width="320" height="370" rx="16" fill="#eff6ff" stroke="#93c5fd"/>
+  <text x="120" y="260" fill="#1e3a8a" font-size="28" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Prepare</text>
+  <rect x="120" y="284" width="120" height="32" rx="16" fill="#2563eb"/>
+  <text x="146" y="306" fill="#ffffff" font-size="16" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Ready</text>
+  <text x="120" y="352" fill="#1e40af" font-size="22" font-family="Segoe UI, Arial, sans-serif">- Version decided</text>
+  <text x="120" y="388" fill="#1e40af" font-size="22" font-family="Segoe UI, Arial, sans-serif">- Changelog updated</text>
+  <text x="120" y="424" fill="#1e40af" font-size="22" font-family="Segoe UI, Arial, sans-serif">- Scope approved</text>
+
+  <rect x="440" y="210" width="320" height="370" rx="16" fill="#ecfdf5" stroke="#86efac"/>
+  <text x="470" y="260" fill="#14532d" font-size="28" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Validate</text>
+  <rect x="470" y="284" width="120" height="32" rx="16" fill="#16a34a"/>
+  <text x="502" y="306" fill="#ffffff" font-size="16" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Done</text>
+  <text x="470" y="352" fill="#166534" font-size="22" font-family="Segoe UI, Arial, sans-serif">- CI pipeline green</text>
+  <text x="470" y="388" fill="#166534" font-size="22" font-family="Segoe UI, Arial, sans-serif">- Artifact checked</text>
+  <text x="470" y="424" fill="#166534" font-size="22" font-family="Segoe UI, Arial, sans-serif">- Security gate pass</text>
+
+  <rect x="790" y="210" width="320" height="370" rx="16" fill="#fff7ed" stroke="#fdba74"/>
+  <text x="820" y="260" fill="#9a3412" font-size="28" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Publish</text>
+  <rect x="820" y="284" width="140" height="32" rx="16" fill="#ea580c"/>
+  <text x="847" y="306" fill="#ffffff" font-size="16" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Attention</text>
+  <text x="820" y="352" fill="#9a3412" font-size="22" font-family="Segoe UI, Arial, sans-serif">- Draft release notes</text>
+  <text x="820" y="388" fill="#9a3412" font-size="22" font-family="Segoe UI, Arial, sans-serif">- Add migration links</text>
+  <text x="820" y="424" fill="#9a3412" font-size="22" font-family="Segoe UI, Arial, sans-serif">- Publish + monitor</text>
+
+  <line x1="410" y1="396" x2="438" y2="396" stroke="#64748b" stroke-width="6"/>
+  <line x1="760" y1="396" x2="788" y2="396" stroke="#64748b" stroke-width="6"/>
+</svg>

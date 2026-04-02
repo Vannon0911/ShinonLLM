@@ -55,6 +55,17 @@ function Start-LocalStack {
     throw "Missing dependency: compose file not found at '$composeFilePath'"
   }
 
+  $modelFileName = if (-not [string]::IsNullOrWhiteSpace($env:LLAMACPP_MODEL_FILE)) {
+    [string]$env:LLAMACPP_MODEL_FILE
+  } else {
+    'qwen2.5-0.5b-instruct-q4_k_m.gguf'
+  }
+  $modelDir = Join-Path (Split-Path -Parent $composeFilePath) 'models'
+  $modelPath = Join-Path $modelDir $modelFileName
+  if (-not (Test-Path -LiteralPath $modelPath -PathType Leaf)) {
+    throw "Missing llama.cpp model file: '$modelPath'. Download a GGUF model into ops\\models first."
+  }
+
   $dockerCommand = Get-Command -Name docker -ErrorAction Stop
   if ($null -eq $dockerCommand) {
     throw 'Missing dependency: docker command is not available'

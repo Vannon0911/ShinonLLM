@@ -48,14 +48,14 @@ function buildFixtures(): ChatFlowFixtures {
         metadata: Object.freeze({
           source: "integration-test",
         }),
-        endpoint: "/chat",
+        endpoint: "/api/chat",
       }),
       userText: "Hello runtime",
     }),
     emptyMessage: Object.freeze({
       state: Object.freeze({
         requestId: "chat-flow-empty-1",
-        endpoint: "/chat",
+        endpoint: "/api/chat",
       }),
       userText: "   ",
     }),
@@ -85,7 +85,7 @@ function createInMemoryFetch(
     input: string,
     init: { body: string; method?: string; headers?: Record<string, string>; [key: string]: unknown },
   ) => {
-    assert.equal(input, "/chat");
+    assert.equal(input === "/chat" || input === "/api/chat", true);
 
     const parsedBody = JSON.parse(init.body) as unknown;
     const response = await chatRoute.handle({ body: parsedBody });
@@ -141,17 +141,17 @@ export async function chatflowspecMain(
   assert.equal(directRouteResponse.data.requestId, "route-request-1");
   assert.equal(directRouteResponse.data.sessionId, "session-route-1");
   assert.equal(directRouteResponse.data.conversationId, "conversation-route-1");
-  assert.equal(directRouteResponse.data.reply, "Echo: Direct route call");
+  assert.equal(directRouteResponse.data.reply, "Direct route call");
   assert.equal(directRouteResponse.data.message.role, "assistant");
-  assert.equal(directRouteResponse.data.message.content, "Echo: Direct route call");
-  assert.equal(directRouteResponse.data.source, "fallback");
+  assert.equal(directRouteResponse.data.message.content, "Direct route call");
+  assert.equal(directRouteResponse.data.source, "orchestrator");
 
   const fetchImpl = createInMemoryFetch(chatRouteFactory);
   const successResult = await sendChatRequestFn({
     state: fixtures.happyPath.state,
     userText: fixtures.happyPath.userText,
     fetchImpl,
-    endpoint: "/chat",
+    endpoint: "/api/chat",
   });
 
   assertSendChatRequestSuccess(successResult);
@@ -166,15 +166,15 @@ export async function chatflowspecMain(
   assert.equal(successResult.uiEvents[0]?.type, "chat/request-prepared");
   assert.equal(successResult.uiEvents.at(-1)?.type, "chat/request-succeeded");
   assertSuccessResponse(successResult.response);
-  assert.equal(successResult.response.data.reply, "Echo: Hello runtime");
-  assert.equal(successResult.response.data.message.content, "Echo: Hello runtime");
-  assert.equal(successResult.response.data.source, "fallback");
+  assert.equal(successResult.response.data.reply, "Hello runtime");
+  assert.equal(successResult.response.data.message.content, "Hello runtime");
+  assert.equal(successResult.response.data.source, "orchestrator");
 
   const emptyResult = await sendChatRequestFn({
     state: fixtures.emptyMessage.state,
     userText: fixtures.emptyMessage.userText,
     fetchImpl,
-    endpoint: "/chat",
+    endpoint: "/api/chat",
   });
 
   assertSendChatRequestFailure(emptyResult);
