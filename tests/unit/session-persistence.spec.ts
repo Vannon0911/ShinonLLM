@@ -15,6 +15,7 @@ type SqlCall = Readonly<{
 function createSqliteAdapterHarness() {
   const calls: SqlCall[] = [];
   const rows: Array<Record<string, unknown>> = [];
+  let userVersion = 0;
 
   const adapter = {
     run(sql: string, params: ReadonlyArray<unknown> = []) {
@@ -46,6 +47,13 @@ function createSqliteAdapterHarness() {
         }
         return { changes: before - rows.length };
       }
+      if (sql.startsWith("PRAGMA user_version =")) {
+        const parsed = Number.parseInt(sql.split("=").at(-1)?.trim() ?? "", 10);
+        if (Number.isInteger(parsed) && parsed >= 0) {
+          userVersion = parsed;
+        }
+        return { changes: 0 };
+      }
       return { changes: 1 };
     },
     all(sql: string, params: ReadonlyArray<unknown> = []) {
@@ -54,6 +62,9 @@ function createSqliteAdapterHarness() {
         sql,
         params,
       });
+      if (sql.trim().startsWith("PRAGMA user_version")) {
+        return [{ user_version: userVersion }];
+      }
       const sessionId = String(params[0]);
       const conversationId = String(params[1]);
       const limit = Number(params[2]);
@@ -126,7 +137,8 @@ export function sessionpersistencespecMain(): void {
     (call) =>
       call.kind === "run" &&
       (call.sql.includes("CREATE TABLE IF NOT EXISTS session_memory_entries") ||
-        call.sql.includes("CREATE INDEX IF NOT EXISTS idx_session_memory_scope")),
+        call.sql.includes("CREATE INDEX IF NOT EXISTS idx_session_memory_scope") ||
+        call.sql.startsWith("PRAGMA user_version = 1")),
   );
   assert.equal(schemaCalls.length >= 2, true);
 }

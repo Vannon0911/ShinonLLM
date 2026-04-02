@@ -83,72 +83,13 @@ Systeme akkumulieren Memory ohne Bereinigung. Emotionale Reinforcement-Loops ent
 
 ---
 
-## 3. MEMORY-TYPEN - WAS GESPEICHERT WIRD
+## 3. MEMORY POLICY (KANONISCHER VERWEIS)
 
-Nicht Dialoge. Atomare Fakten.
+Dieses Konzeptdokument beschreibt Architekturprinzipien. Die verbindliche Memory-Policy (TTL, Decay-Retention, SQLite-Opt-in, Fail-Closed/Best-Effort, Migrationsregeln) ist zentral dokumentiert in:
 
-| Typ | Beispiel | Decay? |
-|-----|----------|--------|
-| `goal` | "Will NL5 erreichen bis Sommer" | Ja |
-| `fact` | "Spielt 9-max mit Ante" | Nein |
-| `preference` | "Mag kurze Antworten" | Ja |
-| `relation` | "Jax = Vertrauensperson" | Langsam |
-| `open_loop` | "Frage zu 3-bet Spots offen" | Ja |
-| `constraint` | "Kein GTO-Talk, nur Exploit" | Nein |
+- [MEMORY_POLICY.md](./MEMORY_POLICY.md)
 
----
-
-## 4. PRIORITY SCORE - DETERMINISTISCH, KEIN LLM-URTEIL
-
-```text
-score = (usage_count * 0.4) + (recency_weight * 0.4) + (intent_match * 0.2)
-```
-
-- `usage_count`: Wie oft wurde der Eintrag genutzt
-- `recency_weight`: Exponentieller Zeitfaktor
-- `intent_match`: Passt aktueller Intent zum Eintrag
-
-Kein LLM entscheidet den Score.
-
----
-
-## 5. WRITE-GATE - assertPatchesAllowed FUER MEMORY
-
-```javascript
-function assertMemoryAllowed(entry, allowedTypes) {
-  if (!allowedTypes.includes(entry.type)) {
-    throw new Error(`Memory write blocked: type '${entry.type}' not in contract`);
-  }
-  if (!entry.content || entry.content.length > MAX_CONTENT_BYTES) {
-    throw new Error("Memory write blocked: content invalid");
-  }
-  if (entry.tags?.includes("emotional_bond") && !entry.explicit_flag) {
-    throw new Error("Memory write blocked: emotional reinforcement requires explicit_flag");
-  }
-}
-```
-
----
-
-## 6. DECAY - ANTI-MANIPULATION DURCH ARITHMETIK
-
-```text
-neue_score = alte_score * decay_factor^(tage_seit_letztem_zugriff)
-decay_factor = 0.92
-```
-
----
-
-## 7. CONTEXT COMPILER - LLM SIEHT NUR FREIGEGEBENEN KONTEXT
-
-```javascript
-function compileContext(userId, intent, maxTokens = 800) {
-  // runtime-filtered retrieval only
-  return context;
-}
-```
-
-Goldene Regel: Runtime entscheidet, was reinkommt.
+Die Runtime-Regel bleibt unveraendert: Das LLM bekommt nur freigegebenen, runtime-kuratierten Kontext und schreibt keinen Zustand direkt.
 
 ---
 
@@ -207,4 +148,3 @@ Minimal:
 ## 12. LEITSATZ
 
 **Die Runtime denkt, das LLM formuliert Text.**
-

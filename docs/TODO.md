@@ -11,7 +11,7 @@
 ## P1 (important)
 - [ ] Integrate E2E explicitly into the default verify flow or document it as intentionally optional.
 - [ ] Harden SQLite target runtime path and migration story.
-- [ ] Add CI status badges to README after first green runs on GitHub.
+- [ ] Add CI status badges to README (ready, needs `<OWNER>/<REPO>` slug replacement).
 
 ## P2 (quality)
 - [ ] Decide final licensing (current `LICENSE` is a conservative "all rights reserved" placeholder).

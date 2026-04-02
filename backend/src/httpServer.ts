@@ -1,4 +1,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import { mkdir } from "node:fs/promises";
+import { homedir } from "node:os";
+import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { createChatRoute } from "./routes/chat.js";
@@ -97,16 +100,62 @@ function toPositiveInteger(value: unknown): number | undefined {
   return parsed;
 }
 
-async function createSessionMemoryPersistence(): Promise<SessionMemoryPersistence> {
-  const sqlitePath = process.env.SHINON_MEMORY_SQLITE_PATH?.trim();
-  if (!sqlitePath) {
-    return createInMemorySessionMemoryPersistence();
+function isSqliteExplicitlyEnabled(): boolean {
+  return process.env.SHINON_MEMORY_SQLITE?.trim() === "1";
+}
+
+function toDefaultSqlitePath(): string {
+  const homeDirectory = homedir();
+
+  if (process.platform === "win32") {
+    const localAppData = process.env.LOCALAPPDATA?.trim();
+    if (localAppData) {
+      return join(localAppData, "ShinonLLM", "session-memory.sqlite");
+    }
+    return join(homeDirectory, "AppData", "Local", "ShinonLLM", "session-memory.sqlite");
   }
 
+  if (process.platform === "darwin") {
+    return join(homeDirectory, "Library", "Application Support", "ShinonLLM", "session-memory.sqlite");
+  }
+
+  const xdgDataHome = process.env.XDG_DATA_HOME?.trim();
+  if (xdgDataHome) {
+    return join(xdgDataHome, "ShinonLLM", "session-memory.sqlite");
+  }
+  return join(homeDirectory, ".local", "share", "ShinonLLM", "session-memory.sqlite");
+}
+
+function toErrorMessage(value: unknown): string {
+  if (value instanceof Error) {
+    return value.message;
+  }
+  if (typeof value === "object" && value !== null && "message" in value) {
+    const candidate = (value as { message?: unknown }).message;
+    if (typeof candidate === "string" && candidate.trim().length > 0) {
+      return candidate;
+    }
+  }
+  return String(value);
+}
+
+async function createSessionMemoryPersistence(): Promise<SessionMemoryPersistence> {
+  const sqlitePathOverride = process.env.SHINON_MEMORY_SQLITE_PATH?.trim();
+  const sqliteEnabled = isSqliteExplicitlyEnabled() || Boolean(sqlitePathOverride);
+  if (!sqliteEnabled) {
+    return createInMemorySessionMemoryPersistence();
+  }
+  const sqlitePath = sqlitePathOverride || toDefaultSqlitePath();
+
   try {
+    await mkdir(dirname(sqlitePath), { recursive: true });
+
     const sqliteModule = await import("node:sqlite");
     const DatabaseSyncCtor = (sqliteModule as { DatabaseSync?: unknown }).DatabaseSync;
     if (typeof DatabaseSyncCtor !== "function") {
+      if (isSqliteExplicitlyEnabled()) {
+        throw new Error("node:sqlite is unavailable in this Node.js runtime");
+      }
       return createInMemorySessionMemoryPersistence();
     }
 
@@ -130,7 +179,12 @@ async function createSessionMemoryPersistence(): Promise<SessionMemoryPersistenc
     });
 
     return createSqliteSessionMemoryPersistence(adapter);
-  } catch {
+  } catch (error) {
+    if (isSqliteExplicitlyEnabled()) {
+      throw new Error(
+        `SQLite session memory initialization failed for path "${sqlitePath}": ${toErrorMessage(error)}`,
+      );
+    }
     return createInMemorySessionMemoryPersistence();
   }
 }

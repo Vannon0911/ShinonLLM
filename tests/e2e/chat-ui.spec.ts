@@ -309,17 +309,17 @@ export async function chatuispecMain(
   const retrySending = harness.snapshot();
   assert.equal(retrySending.ariaBusy, true);
   assert.equal(retrySending.error, null);
-  assert.equal(retrySending.messages.length, 3);
-  assert.equal(retrySending.messages[2]?.role, "user");
-  assert.equal(retrySending.messages[2]?.content, "retry after error");
+  assert.equal(retrySending.messages.length, 4);
+  assert.equal(retrySending.messages[3]?.role, "user");
+  assert.equal(retrySending.messages[3]?.content, "retry after error");
 
   harness.resolveNext(fixtures.retryReply, "orchestrator");
   await retryPending;
 
   const retrySuccess = harness.snapshot();
-  assert.equal(retrySuccess.messages.length, 4);
-  assert.equal(retrySuccess.messages[3]?.role, "assistant");
-  assert.equal(retrySuccess.messages[3]?.content, fixtures.retryReply);
+  assert.equal(retrySuccess.messages.length, 5);
+  assert.equal(retrySuccess.messages[4]?.role, "assistant");
+  assert.equal(retrySuccess.messages[4]?.content, fixtures.retryReply);
   assert.equal(retrySuccess.error, null);
   assert.equal(retrySuccess.ariaBusy, false);
 
