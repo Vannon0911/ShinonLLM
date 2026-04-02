@@ -1,142 +1,115 @@
-﻿# ShinonLLM
+# ShinonLLM
 
-## Consumer-Teil (Produkt zuerst)
+Release: **0.2.1a** (Package-Semantik: `0.2.1-a`)
 
-### Was ShinonLLM ist
-ShinonLLM ist eine lokale Web-App fuer KI-gestuetzte Antworten mit einem klaren Grundprinzip:
-**Die Runtime steuert die Logik, das Modell formuliert den Text.**
+## Consumer-Teil
 
-Das ist kein kosmetischer Satz. Das ist der Unterschied zwischen "mal gut, mal wild" und einem System, das sich in echten Workflows kontrolliert verhaelt.
+### Was das Produkt jetzt leistet
+ShinonLLM ist eine lokale Runtime-Web-App, bei der **die Runtime entscheidet** und das Modell nur den finalen Text formuliert.
+Der Fokus liegt auf kontrollierbarem Verhalten statt auf Prompt-Zufall.
 
 ![Consumer Value Map](./docs/assets/consumer-value-map.svg)
 
-### Warum das fuer dich wichtig ist
-Viele KI-Setups wirken am Anfang stark und kippen dann in drei Probleme: unklare Entscheidungen, driftendes Memory und schlechte Nachvollziehbarkeit.
-ShinonLLM setzt genau dort an.
+### Warum das relevant ist
 
-1. **Mehr Kontrolle**
-- Lokaler Betrieb ist vorgesehen.
-- Verhalten wird ueber Runtime-Regeln und klare Pfade gesteuert.
+1. Mehr Kontrolle
+- Default ist deterministic-offline statt ungeplantem Live-Modus.
+- Live-Inference ist ein expliziter Opt-in.
 
-2. **Mehr Konsistenz**
-- Antworten entstehen aus kuratiertem Kontext statt aus wachsender Prompt-Unordnung.
-- Zentrale Pruefpfade reduzieren "heute so, morgen anders".
+2. Mehr Stabilitaet
+- Contract-Gates verhindern ungeregelte Payloads.
+- Replay/Baseline-Checks sichern reproduzierbares Verhalten.
 
-3. **Mehr Verlaesslichkeit**
-- Verifikation ist Teil des Workflows (`verify:backend`, Frontend-Build).
-- Releases folgen einem dokumentierten Prozess statt Ad-hoc-Pushes.
+3. Mehr Betriebssicherheit
+- Session-Memory kann persistiert werden (SQLite Opt-in).
+- Decay/TTL vermeidet ungebremstes Memory-Wachstum.
 
-### Konkrete Nutzbeispiele
+### Nutzbeispiele
 
 ![Nutzbeispiele](./docs/assets/user-journeys.svg)
 
-#### Beispiel 1: Content-Entwurf mit stabilem Stil
-Du willst Texte, die sich wie aus einem Guss lesen.
-ShinonLLM hilft, weil die Runtime den Kontext sauber haelt und nicht jeder Turn den Stil neu verwuerfelt.
+1. Lokale Quick-QA mit kontrolliertem Antwortpfad.
+2. Wissensnahe Chat-Flows mit Session-Kontinuitaet.
+3. Verlaessliche Antwort-Workflows mit eindeutigen Fehlercodes.
 
-#### Beispiel 2: Support-Antworten mit weniger Chaos
-Du brauchst kurze, klare Antworten fuer wiederkehrende Themen.
-Durch strukturierte Eingabepfade und Guardrails sinkt das Risiko von inkonsistenten Antworten.
+## Dev-Teil
 
-#### Beispiel 3: Lokale Quick-QA ohne Cloud-Zwang
-Du willst schnell pruefen, ob dein Prompt/Use Case funktioniert.
-Mit lokalem `llama.cpp`-Setup kannst du direkt testen, ohne von externen Plattformbedingungen abzuhaengen.
-
-### Was ShinonLLM besser macht (ohne Marketing-Maerchen)
-
-![ShinonLLM vs Alternatives](./docs/assets/shinon-vs-alternatives.svg)
-
-ShinonLLM ist nicht "in allem besser".
-ShinonLLM ist in den **kritischen Runtime-Themen** besser aufgestellt:
-
-- **Entscheidungsautoritaet:** Runtime-first statt model-first.
-- **Memory-Kontrolle:** contract-gated statt impliziter Nebenwirkungen.
-- **Reproduzierbarkeit:** Replay/Gates statt "best effort".
-- **Release-Disziplin:** dokumentierter Prozess statt Trial-and-Error.
-
-### Person hinter dem Projekt
-Ich bin **Felix Vannon**.
-ShinonLLM ist mein Versuch, KI aus dem Hype-Modus in einen produktiven Modus zu bringen:
-weniger Show, mehr Systemhaerte.
-
-### Ziel und Vision
-
-![Vision Roadmap](./docs/assets/vision-roadmap.svg)
-
-**Ziel (nah):**
-Eine lokale Web-App, die in echten Aufgaben stabil nutzbar ist.
-
-**Vision (mittel/lang):**
-Eine consumer-taugliche lokale AI-Plattform, bei der Kontrolle und Nachvollziehbarkeit kein Extra sind, sondern Standard.
-
----
-
-## Dev-Teil (technisch)
-
-### Projektphilosophie
+### Runtime-Prinzip
 **The runtime thinks, the LLM formulates text.**
 
-Praktisch bedeutet das:
-- Runtime entscheidet ueber Kontext, Priorisierung und zugelassene Operationen.
-- Model-Output wird eingegrenzt und geprueft.
-- Fail-closed und Determinismus sind keine Nebensache, sondern Kernprinzip.
+Technisch bedeutet das:
+- API-Entry validiert und klassifiziert Requests.
+- Orchestrator baut Kontexte und Guardrails.
+- Inference arbeitet mit Fail-closed Default (`live=false`).
+- Memory-Pfade sind explizit (load -> generate -> append -> optional decay).
 
-### Architektur
-- `backend/`: HTTP-Entry, Route-Verhalten
-- `orchestrator/`: Contracts, Prompt-Building, Guardrails, Routing
-- `inference/`: Adapter (`ollama`, `llama.cpp`)
-- `memory/`: Session/Longterm-Retrieval und Store-Bausteine
-- `telemetry/`: Replay/Hash/Evidence
-- `tests/`: Gates, Unit, Integration
+### Zielarchitektur (MVP)
+
+- `backend/`: API-Entry und Fehlerklassifikation
+- `orchestrator/`: Contracts, Prompt, Guardrails, Routing
+- `inference/`: Backend-Router + Adapter (`ollama`, `llama.cpp`)
+- `memory/`: Retrieval, Session-Store, Persistenzvertrag, Decay
+- `tests/`: Contract-/Replay-/Baseline-Gates + Unit/Integration
 
 ![Runtime Overview](./docs/assets/runtime-overview.svg)
 
-### Technische Vergleiche zu anderen Loesungen
+### Laufzeitprofile
 
-| Bereich | ShinonLLM | Typische Chat-Wrapper | Typische Agent-Stacks |
-|---|---|---|---|
-| Entscheidungslogik | Runtime-first | oft model-first | haeufig tool-first |
-| Memory-Writes | contract-gated | oft implizit | framework-abhaengig |
-| Reproduzierbarkeit | Replay + Gates | best effort | uneinheitlich |
-| Lokaler Betrieb | explizit vorgesehen | oft cloud-zentriert | gemischt |
-| Release-Haerte | Playbook + Gates | oft ad-hoc | team-abhängig |
+Inference:
+- Default: deterministic offline
+- Opt-in live: `memoryContext.inferenceLive=true`
 
-### Aktueller Status (ehrlich)
-- Solider Runtime-/Contract-/Gate-Basiskern vorhanden.
-- API-Pfadvereinheitlichung fuer `/api/chat` und `/api/health` ist umgesetzt (kompatible Aliase vorhanden).
-- Lokaler `llama.cpp` Quick-QA Pfad ist dokumentiert und skriptbar.
-- Naechste harte Ausbaustufe bleibt: produktive SQLite-Persistenz + Decay im Laufzeitpfad.
+Persistenz:
+- Default: In-Memory (volatil)
+- SQLite Opt-in: `SHINON_MEMORY_SQLITE_PATH`
+- TTL optional: `SHINON_MEMORY_TTL_SECONDS`
+- Decay optional: `SHINON_MEMORY_DECAY_AFTER_WRITE=1`
 
-### Quickstart
-Voraussetzung: Node.js LTS
+### Vergleich
+
+![ShinonLLM vs Alternatives](./docs/assets/shinon-vs-alternatives.svg)
+
+- Runtime-first statt model-first
+- Gate-first statt best-effort
+- Reproduzierbarkeit statt ad-hoc Verhalten
+
+### Person, Ziel, Vision
+Projekt von **Felix Vannon**.
+
+Kurzfristiges Ziel:
+- lokaler, belastbarer MVP fuer Runtime-first LLM-Betrieb
+
+Mittelfristige Vision:
+- consumer-taugliche lokale AI-Plattform mit festen Vertragsgrenzen, nicht mit Prompt-Glueck
+
+![Vision Roadmap](./docs/assets/vision-roadmap.svg)
+
+## Quickstart
 
 ```powershell
 npm install
-cd frontend; npm install; cd ..
-npm run test:baseline-integrity
+cd frontend
+npm install
+cd ..
 npm run verify:backend
-cd frontend; npm run build; cd ..
+cd frontend
+npm run build
+cd ..
 ```
 
-Lokaler `llama.cpp` Setup:
-- [docs/LOCAL_LLAMACPP_SETUP.md](./docs/LOCAL_LLAMACPP_SETUP.md)
+## Release- und Architektur-Dokumente
 
-Release-Ablauf auf GitHub:
-- [docs/GITHUB_RELEASE_PLAYBOOK.md](./docs/GITHUB_RELEASE_PLAYBOOK.md)
-
-### Dokumentation
-- [docs/README.md](./docs/README.md)
+- [docs/ZIELARCHITEKTUR_MVP.md](./docs/ZIELARCHITEKTUR_MVP.md)
+- [docs/MVP_SCOPE_SCAN_0.2.1a.md](./docs/MVP_SCOPE_SCAN_0.2.1a.md)
+- [docs/PRAESENTATION_0.2.1a.md](./docs/PRAESENTATION_0.2.1a.md)
 - [docs/REQUIREMENTS.md](./docs/REQUIREMENTS.md)
 - [docs/TESTING_AND_BASELINE.md](./docs/TESTING_AND_BASELINE.md)
-- [docs/TARGET_SYSTEM_OVERVIEW.md](./docs/TARGET_SYSTEM_OVERVIEW.md)
-- [docs/DETERMINISTISCHES_LLM_RUNTIME_KONZEPT.md](./docs/DETERMINISTISCHES_LLM_RUNTIME_KONZEPT.md)
-- [docs/releases/RELEASE_PROCESS.md](./docs/releases/RELEASE_PROCESS.md)
+- [docs/GITHUB_RELEASE_PLAYBOOK.md](./docs/GITHUB_RELEASE_PLAYBOOK.md)
 - [CHANGELOG.md](./CHANGELOG.md)
 
-### Source of Truth
-`README.md` ist Einstieg und Produktdarstellung, nicht alleinige technische Wahrheit.
+## Source of Truth
 
-Autoritative Referenzen:
 - [LLM_ENTRY.md](./LLM_ENTRY.md)
 - [docs/LLM_ENTRY_CONFORMITY.md](./docs/LLM_ENTRY_CONFORMITY.md)
-- [docs/DETERMINISTISCHES_LLM_RUNTIME_KONZEPT.md](./docs/DETERMINISTISCHES_LLM_RUNTIME_KONZEPT.md)
+- [docs/ZIELARCHITEKTUR_MVP.md](./docs/ZIELARCHITEKTUR_MVP.md)
+- [docs/MVP_SCOPE_SCAN_0.2.1a.md](./docs/MVP_SCOPE_SCAN_0.2.1a.md)

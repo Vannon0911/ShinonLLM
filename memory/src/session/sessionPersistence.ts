@@ -1,0 +1,343 @@
+export type PersistedSessionMemoryEntry = Readonly<{
+  id: string;
+  sessionId: string;
+  conversationId: string;
+  role: "user" | "assistant" | "system";
+  content: string;
+  createdAt: string;
+  expiresAt?: string;
+  metadata?: Readonly<Record<string, unknown>>;
+}>;
+
+export type SessionMemoryScope = Readonly<{
+  sessionId: string;
+  conversationId: string;
+  limit?: number;
+}>;
+
+export type SessionMemoryAppendInput = Readonly<{
+  sessionId: string;
+  conversationId: string;
+  role: "user" | "assistant" | "system";
+  content: string;
+  createdAt?: string;
+  ttlSeconds?: number;
+  metadata?: Readonly<Record<string, unknown>>;
+}>;
+
+export type SessionMemoryDecayInput = Readonly<{
+  now?: string;
+  keepLatestPerConversation?: number;
+}>;
+
+export type SessionMemoryPersistence = Readonly<{
+  load(scope: SessionMemoryScope): ReadonlyArray<PersistedSessionMemoryEntry>;
+  append(entries: ReadonlyArray<SessionMemoryAppendInput>): number;
+  decay(input?: SessionMemoryDecayInput): number;
+}>;
+
+export type SessionMemorySqliteAdapter = Readonly<{
+  run: (sql: string, params?: ReadonlyArray<unknown>) => { changes?: number } | void;
+  all: (sql: string, params?: ReadonlyArray<unknown>) => ReadonlyArray<Record<string, unknown>>;
+}>;
+
+const DEFAULT_LIMIT = 64;
+const DEFAULT_KEEP_LATEST = 128;
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function toIsoNow(): string {
+  return new Date().toISOString();
+}
+
+function failClosed(message: string): never {
+  throw {
+    code: "BAD_REQUEST",
+    message,
+  };
+}
+
+function normalizeLimit(value: unknown): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return DEFAULT_LIMIT;
+  }
+  const normalized = Math.floor(value);
+  return normalized > 0 ? normalized : DEFAULT_LIMIT;
+}
+
+function normalizeKeepLatest(value: unknown): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return DEFAULT_KEEP_LATEST;
+  }
+  const normalized = Math.floor(value);
+  return normalized > 0 ? normalized : DEFAULT_KEEP_LATEST;
+}
+
+function createEntryId(seed: string): string {
+  let hash = 2166136261;
+  for (let index = 0; index < seed.length; index += 1) {
+    hash ^= seed.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `mem_${(hash >>> 0).toString(16).padStart(8, "0")}`;
+}
+
+function normalizeScope(scope: SessionMemoryScope): SessionMemoryScope {
+  if (!isPlainObject(scope)) {
+    failClosed("session memory scope must be a plain object");
+  }
+  if (!isNonEmptyString(scope.sessionId)) {
+    failClosed("session memory scope.sessionId must be a non-empty string");
+  }
+  if (!isNonEmptyString(scope.conversationId)) {
+    failClosed("session memory scope.conversationId must be a non-empty string");
+  }
+
+  return Object.freeze({
+    sessionId: scope.sessionId.trim(),
+    conversationId: scope.conversationId.trim(),
+    limit: normalizeLimit(scope.limit),
+  });
+}
+
+function normalizeAppendEntry(entry: SessionMemoryAppendInput): PersistedSessionMemoryEntry {
+  if (!isPlainObject(entry)) {
+    failClosed("session memory append entries must be plain objects");
+  }
+  if (!isNonEmptyString(entry.sessionId) || !isNonEmptyString(entry.conversationId)) {
+    failClosed("session memory append requires sessionId and conversationId");
+  }
+  if (entry.role !== "user" && entry.role !== "assistant" && entry.role !== "system") {
+    failClosed("session memory append role must be user, assistant, or system");
+  }
+  if (!isNonEmptyString(entry.content)) {
+    failClosed("session memory append content must be a non-empty string");
+  }
+
+  const createdAt = isNonEmptyString(entry.createdAt) ? entry.createdAt.trim() : toIsoNow();
+  const expiresAt =
+    typeof entry.ttlSeconds === "number" && Number.isFinite(entry.ttlSeconds) && entry.ttlSeconds > 0
+      ? new Date(new Date(createdAt).getTime() + Math.floor(entry.ttlSeconds * 1000)).toISOString()
+      : undefined;
+  const metadata = isPlainObject(entry.metadata) ? Object.freeze({ ...entry.metadata }) : undefined;
+
+  const id = createEntryId(
+    `${entry.sessionId.trim()}|${entry.conversationId.trim()}|${entry.role}|${entry.content.trim()}|${createdAt}`,
+  );
+
+  return Object.freeze({
+    id,
+    sessionId: entry.sessionId.trim(),
+    conversationId: entry.conversationId.trim(),
+    role: entry.role,
+    content: entry.content.trim(),
+    createdAt,
+    expiresAt,
+    metadata,
+  });
+}
+
+function normalizePersistedRow(row: Record<string, unknown>): PersistedSessionMemoryEntry | null {
+  if (
+    !isNonEmptyString(row.id) ||
+    !isNonEmptyString(row.session_id) ||
+    !isNonEmptyString(row.conversation_id) ||
+    !isNonEmptyString(row.role) ||
+    !isNonEmptyString(row.content) ||
+    !isNonEmptyString(row.created_at)
+  ) {
+    return null;
+  }
+
+  const role = row.role.trim();
+  if (role !== "user" && role !== "assistant" && role !== "system") {
+    return null;
+  }
+
+  let metadata: Readonly<Record<string, unknown>> | undefined;
+  if (typeof row.metadata_json === "string" && row.metadata_json.trim().length > 0) {
+    try {
+      const parsed = JSON.parse(row.metadata_json);
+      if (isPlainObject(parsed)) {
+        metadata = Object.freeze({ ...parsed });
+      }
+    } catch {
+      metadata = undefined;
+    }
+  }
+
+  return Object.freeze({
+    id: row.id.trim(),
+    sessionId: row.session_id.trim(),
+    conversationId: row.conversation_id.trim(),
+    role,
+    content: row.content.trim(),
+    createdAt: row.created_at.trim(),
+    expiresAt: isNonEmptyString(row.expires_at) ? row.expires_at.trim() : undefined,
+    metadata,
+  });
+}
+
+export function createInMemorySessionMemoryPersistence(
+  initialEntries: ReadonlyArray<SessionMemoryAppendInput> = [],
+): SessionMemoryPersistence {
+  let entries = initialEntries.map(normalizeAppendEntry);
+
+  return Object.freeze({
+    load(scope: SessionMemoryScope): ReadonlyArray<PersistedSessionMemoryEntry> {
+      const normalized = normalizeScope(scope);
+      return Object.freeze(
+        entries
+          .filter(
+            (entry) =>
+              entry.sessionId === normalized.sessionId &&
+              entry.conversationId === normalized.conversationId,
+          )
+          .slice(-normalized.limit!),
+      );
+    },
+    append(nextEntries: ReadonlyArray<SessionMemoryAppendInput>): number {
+      if (!Array.isArray(nextEntries)) {
+        failClosed("session memory append input must be an array");
+      }
+      const normalized = nextEntries.map(normalizeAppendEntry);
+      entries = [...entries, ...normalized];
+      return normalized.length;
+    },
+    decay(input: SessionMemoryDecayInput = {}): number {
+      const now = isNonEmptyString(input.now) ? input.now.trim() : toIsoNow();
+      const keepLatestPerConversation = normalizeKeepLatest(input.keepLatestPerConversation);
+      const before = entries.length;
+
+      const grouped = new Map<string, PersistedSessionMemoryEntry[]>();
+      for (const entry of entries) {
+        const key = `${entry.sessionId}|${entry.conversationId}`;
+        const group = grouped.get(key) ?? [];
+        group.push(entry);
+        grouped.set(key, group);
+      }
+
+      const retained: PersistedSessionMemoryEntry[] = [];
+      for (const group of grouped.values()) {
+        const notExpired = group.filter((entry) => !entry.expiresAt || entry.expiresAt > now);
+        retained.push(...notExpired.slice(-keepLatestPerConversation));
+      }
+
+      entries = retained;
+      return Math.max(0, before - entries.length);
+    },
+  });
+}
+
+function ensureSqliteSchema(adapter: SessionMemorySqliteAdapter): void {
+  adapter.run(
+    [
+      "CREATE TABLE IF NOT EXISTS session_memory_entries (",
+      "  id TEXT PRIMARY KEY,",
+      "  session_id TEXT NOT NULL,",
+      "  conversation_id TEXT NOT NULL,",
+      "  role TEXT NOT NULL,",
+      "  content TEXT NOT NULL,",
+      "  created_at TEXT NOT NULL,",
+      "  expires_at TEXT,",
+      "  metadata_json TEXT",
+      ");",
+    ].join("\n"),
+  );
+  adapter.run(
+    "CREATE INDEX IF NOT EXISTS idx_session_memory_scope ON session_memory_entries(session_id, conversation_id, created_at);",
+  );
+  adapter.run(
+    "CREATE INDEX IF NOT EXISTS idx_session_memory_expiry ON session_memory_entries(expires_at);",
+  );
+}
+
+export function createSqliteSessionMemoryPersistence(
+  adapter: SessionMemorySqliteAdapter,
+): SessionMemoryPersistence {
+  if (!isPlainObject(adapter) || typeof adapter.run !== "function" || typeof adapter.all !== "function") {
+    failClosed("sqlite session memory adapter requires run() and all()");
+  }
+
+  ensureSqliteSchema(adapter);
+
+  return Object.freeze({
+    load(scope: SessionMemoryScope): ReadonlyArray<PersistedSessionMemoryEntry> {
+      const normalized = normalizeScope(scope);
+      const rows = adapter.all(
+        [
+          "SELECT id, session_id, conversation_id, role, content, created_at, expires_at, metadata_json",
+          "FROM session_memory_entries",
+          "WHERE session_id = ? AND conversation_id = ?",
+          "ORDER BY created_at ASC",
+          "LIMIT ?",
+        ].join("\n"),
+        [normalized.sessionId, normalized.conversationId, normalized.limit ?? DEFAULT_LIMIT],
+      );
+
+      const normalizedRows = rows
+        .map((row) => normalizePersistedRow(row))
+        .filter((entry): entry is PersistedSessionMemoryEntry => entry !== null);
+      return Object.freeze(normalizedRows);
+    },
+    append(nextEntries: ReadonlyArray<SessionMemoryAppendInput>): number {
+      if (!Array.isArray(nextEntries)) {
+        failClosed("session memory append input must be an array");
+      }
+      let inserted = 0;
+      for (const item of nextEntries) {
+        const entry = normalizeAppendEntry(item);
+        const result = adapter.run(
+          [
+            "INSERT OR REPLACE INTO session_memory_entries",
+            "(id, session_id, conversation_id, role, content, created_at, expires_at, metadata_json)",
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+          ].join("\n"),
+          [
+            entry.id,
+            entry.sessionId,
+            entry.conversationId,
+            entry.role,
+            entry.content,
+            entry.createdAt,
+            entry.expiresAt ?? null,
+            entry.metadata ? JSON.stringify(entry.metadata) : null,
+          ],
+        );
+        inserted += typeof result?.changes === "number" ? Math.max(0, result.changes) : 1;
+      }
+      return inserted;
+    },
+    decay(input: SessionMemoryDecayInput = {}): number {
+      const now = isNonEmptyString(input.now) ? input.now.trim() : toIsoNow();
+      const keepLatestPerConversation = normalizeKeepLatest(input.keepLatestPerConversation);
+
+      const expireResult = adapter.run(
+        "DELETE FROM session_memory_entries WHERE expires_at IS NOT NULL AND expires_at <= ?",
+        [now],
+      );
+
+      adapter.run(
+        [
+          "DELETE FROM session_memory_entries",
+          "WHERE id IN (",
+          "  SELECT id FROM (",
+          "    SELECT id, ROW_NUMBER() OVER (PARTITION BY session_id, conversation_id ORDER BY created_at DESC) AS rn",
+          "    FROM session_memory_entries",
+          "  ) ranked",
+          "  WHERE rn > ?",
+          ")",
+        ].join("\n"),
+        [keepLatestPerConversation],
+      );
+
+      return typeof expireResult?.changes === "number" ? Math.max(0, expireResult.changes) : 0;
+    },
+  });
+}

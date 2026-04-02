@@ -5,38 +5,25 @@ Stand: 2026-04-02
 ## Laufzeit
 
 1. Node.js LTS (empfohlen: 20.x oder 22.x)
-2. npm (mit Node.js)
-3. PowerShell (für die bereitgestellten `ops/scripts/*.ps1`)
+2. npm
+3. PowerShell (fuer `ops/scripts/*.ps1`)
 
-## Optional für lokalen LLM-Betrieb
+## Optional fuer lokalen LLM-Betrieb
 
 1. Docker Desktop (wenn `ops/docker-compose.local.yml` genutzt wird)
 2. Lokales GGUF-Modell in `ops/models/`
-- Beispiel: `qwen2.5-0.5b-instruct-q4_k_m.gguf`
-3. Für manuelles Model-Download-Handling:
-- Python 3.12+
-- `huggingface_hub` (Python-Paket)
+3. Python 3.12+ + `huggingface_hub` fuer manuelle Modell-Downloads
 
-## Global installierte CLI-Tools (optional, aber praktisch)
+## Projektabhaengigkeiten
 
 ```powershell
-npm install -g typescript tsx
-python -m pip install --upgrade huggingface_hub
-```
-
-## Projektabhängigkeiten installieren
-
-```powershell
-# root
 npm install
-
-# frontend
 cd frontend
 npm install
 cd ..
 ```
 
-## Pflicht-Checks nach Installation
+## Pflicht-Checks
 
 ```powershell
 npm run verify:backend
@@ -44,6 +31,18 @@ cd frontend
 npm run build
 cd ..
 ```
+
+## Runtime-Profile (wichtig)
+
+Inference:
+- Default: deterministic offline (`live=false`)
+- Live nur per explizitem Opt-in: `memoryContext.inferenceLive=true`
+
+Session-Memory Persistenz:
+- Default: In-Memory (volatil)
+- SQLite Opt-in ueber `SHINON_MEMORY_SQLITE_PATH`
+- optionale TTL pro Eintrag: `SHINON_MEMORY_TTL_SECONDS`
+- optionales Decay nach jedem Write: `SHINON_MEMORY_DECAY_AFTER_WRITE=1`
 
 ## Hinweise
 

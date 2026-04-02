@@ -99,6 +99,25 @@ input {
   gap: 10px;
 }
 
+.chat-shell__model {
+  display: grid;
+  gap: 6px;
+  max-width: 360px;
+}
+
+.chat-shell__model span {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.chat-shell__model select {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #0a1329;
+  color: var(--text);
+}
+
 .chat-shell__composer textarea {
   resize: vertical;
   min-height: 100px;

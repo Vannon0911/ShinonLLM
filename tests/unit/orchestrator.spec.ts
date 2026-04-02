@@ -63,7 +63,7 @@ function buildFixtures(): OrchestratorFixtures {
         }),
       }),
       expected: Object.freeze({
-        reply: 'Hello runtime | memory=alpha="zed" | beta=2 | modelHint="custom-model" | nested={"a":1,"b":2}',
+        reply: "Hello runtime",
         model: "custom-model",
         prompt: [
           "SYSTEM: Produce a concise, valid assistant response.",

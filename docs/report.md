@@ -1,17 +1,22 @@
-﻿# report.md
+# report.md
 
 - Date: 2026-04-02
 - Directory: docs
-- Goal: "Die Runtime denkt, das LLM formuliert Text."
-- Status: Partially aligned
+- Goal: Runtime-first MVP nach FELIX_SYSTEM_ARCHITECTURE
+- Status: Updated for release 0.2.1a
 
 ## Role in Target System
-Source-of-Truth Dokumentation
+
+Zentrale Dokumentations-Wahrheitsquelle fuer Zielarchitektur, Scope und Release-Reifegrad.
 
 ## Assessment
-- This directory was checked against the runtime-first objective.
-- File footprint (non-artifact): 8 files.
-- Main gap: TODO-/Roadmap-/Operator-Doku weiter konkretisieren.
+
+- Zielarchitektur fuer MVP ist konsolidiert (`docs/ZIELARCHITEKTUR_MVP.md`).
+- Repo-Scan gegen MVP-Basis ist dokumentiert (`docs/MVP_SCOPE_SCAN_0.2.1a.md`).
+- Praesentationsmaterial wurde inhaltlich erweitert (`docs/PRAESENTATION_0.2.1a.md`).
+- Release- und Versionsregeln sind fuer `0.2.1a` / `0.2.1-a` geklaert.
 
 ## Next Action
-- Keep this area aligned to: runtime decides, LLM only formulates.
+
+- CI-Pflichtgates fuer `verify:backend` und Frontend-Build verankern.
+- SQLite-Migrationsstrategie als naechsten P0/P1-Schritt spezifizieren.

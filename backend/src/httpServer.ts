@@ -3,6 +3,12 @@ import { pathToFileURL } from "node:url";
 
 import { createChatRoute } from "./routes/chat.js";
 import { createHealthRoute } from "./routes/health.js";
+import {
+  createInMemorySessionMemoryPersistence,
+  createSqliteSessionMemoryPersistence,
+  type SessionMemoryPersistence,
+  type SessionMemorySqliteAdapter,
+} from "../../memory/src/session/sessionPersistence.js";
 
 const DEFAULT_HOST = "127.0.0.1";
 const DEFAULT_PORT = 3001;
@@ -80,12 +86,67 @@ function writeJson(response: ServerResponse, status: number, body: unknown): voi
   response.end(JSON.stringify(body));
 }
 
+function toPositiveInteger(value: unknown): number | undefined {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    return undefined;
+  }
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    return undefined;
+  }
+  return parsed;
+}
+
+async function createSessionMemoryPersistence(): Promise<SessionMemoryPersistence> {
+  const sqlitePath = process.env.SHINON_MEMORY_SQLITE_PATH?.trim();
+  if (!sqlitePath) {
+    return createInMemorySessionMemoryPersistence();
+  }
+
+  try {
+    const sqliteModule = await import("node:sqlite");
+    const DatabaseSyncCtor = (sqliteModule as { DatabaseSync?: unknown }).DatabaseSync;
+    if (typeof DatabaseSyncCtor !== "function") {
+      return createInMemorySessionMemoryPersistence();
+    }
+
+    const database = new (DatabaseSyncCtor as new (filename: string) => {
+      prepare: (sql: string) => {
+        run: (...params: unknown[]) => { changes?: number };
+        all: (...params: unknown[]) => unknown[];
+      };
+    })(sqlitePath);
+
+    const adapter: SessionMemorySqliteAdapter = Object.freeze({
+      run(sql: string, params: ReadonlyArray<unknown> = []) {
+        const statement = database.prepare(sql);
+        return statement.run(...params);
+      },
+      all(sql: string, params: ReadonlyArray<unknown> = []) {
+        const statement = database.prepare(sql);
+        const rows = statement.all(...params);
+        return Array.isArray(rows) ? (rows as ReadonlyArray<Record<string, unknown>>) : [];
+      },
+    });
+
+    return createSqliteSessionMemoryPersistence(adapter);
+  } catch {
+    return createInMemorySessionMemoryPersistence();
+  }
+}
+
 async function main(): Promise<void> {
   const host = process.env.BACKEND_HOST?.trim() || DEFAULT_HOST;
   const portCandidate = Number.parseInt(process.env.BACKEND_PORT ?? `${DEFAULT_PORT}`, 10);
   const port = Number.isInteger(portCandidate) && portCandidate > 0 ? portCandidate : DEFAULT_PORT;
 
-  const chatRoute = createChatRoute();
+  const memoryTtlSeconds = toPositiveInteger(process.env.SHINON_MEMORY_TTL_SECONDS);
+  const sessionMemoryPersistence = await createSessionMemoryPersistence();
+  const chatRoute = createChatRoute({
+    sessionMemoryPersistence,
+    memoryTtlSeconds,
+    decayAfterWrite: process.env.SHINON_MEMORY_DECAY_AFTER_WRITE === "1",
+  });
   const healthRoute = createHealthRoute({
     backendHealth: () =>
       Object.freeze({

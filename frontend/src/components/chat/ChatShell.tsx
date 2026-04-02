@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 
 type ChatRole = "user" | "assistant";
+type ChatModel = "runtime-default" | "llamacpp-qwen-0_5b" | "ollama-default";
 
 type ChatMessage = Readonly<{
   id: string;
@@ -34,6 +35,7 @@ type ChatRequestPayload = Readonly<{
   metadata: Readonly<{
     source: "ChatShell";
     messageCount: number;
+    model: ChatModel;
   }>;
 }>;
 
@@ -83,6 +85,7 @@ function normalizeText(value: string): string {
 function buildRequestPayload(
   messages: ReadonlyArray<ChatMessage>,
   userText: string,
+  model: ChatModel,
   sessionId?: string,
   conversationId?: string
 ): ChatRequestPayload {
@@ -92,6 +95,7 @@ function buildRequestPayload(
       sessionId ?? "",
       conversationId ?? "",
       normalizedText,
+      model,
       String(messages.length),
     ].join("|")
   );
@@ -116,6 +120,7 @@ function buildRequestPayload(
     metadata: {
       source: "ChatShell",
       messageCount: messages.length + 1,
+      model,
     },
   };
 }
@@ -195,8 +200,11 @@ function MessageList({ messages }: { messages: ReadonlyArray<ChatMessage> }) {
 }
 
 function Composer(props: {
+  model: ChatModel;
+  onModelChange: (value: ChatModel) => void;
   value: string;
-  disabled: boolean;
+  disableInput: boolean;
+  disableSubmit: boolean;
   onChange: (value: string) => void;
   onSubmit: () => void;
 }) {
@@ -208,15 +216,28 @@ function Composer(props: {
         props.onSubmit();
       }}
     >
+      <label className="chat-shell__model">
+        <span>Model</span>
+        <select
+          aria-label="Model"
+          disabled={props.disableInput}
+          onChange={(event) => props.onModelChange(event.currentTarget.value as ChatModel)}
+          value={props.model}
+        >
+          <option value="runtime-default">Runtime Default</option>
+          <option value="llamacpp-qwen-0_5b">llama.cpp Qwen 0.5B (Local)</option>
+          <option value="ollama-default">Ollama Default</option>
+        </select>
+      </label>
       <textarea
         aria-label="Message"
-        disabled={props.disabled}
+        disabled={props.disableInput}
         value={props.value}
         onChange={(event) => props.onChange(event.currentTarget.value)}
         placeholder="Type a message"
         rows={4}
       />
-      <button disabled={props.disabled} type="submit">
+      <button disabled={props.disableSubmit} type="submit">
         Send
       </button>
     </form>
@@ -232,6 +253,7 @@ export function ChatShell({
 }: ChatShellProps) {
   const [messages, setMessages] = useState<ReadonlyArray<ChatMessage>>(initialMessages);
   const [draft, setDraft] = useState("");
+  const [model, setModel] = useState<ChatModel>("runtime-default");
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<ChatUIError | null>(null);
 
@@ -267,7 +289,7 @@ export function ChatShell({
       return;
     }
 
-    const payload = buildRequestPayload(messages, normalizedText, sessionId, conversationId);
+    const payload = buildRequestPayload(messages, normalizedText, model, sessionId, conversationId);
 
     setIsSending(true);
     setError(null);
@@ -316,7 +338,7 @@ export function ChatShell({
     } finally {
       setIsSending(false);
     }
-  }, [apiBasePath, conversationId, draft, emit, isSending, messages, sessionId]);
+  }, [apiBasePath, conversationId, draft, emit, isSending, messages, model, sessionId]);
 
   return (
     <section className="chat-shell" aria-busy={isSending}>
@@ -334,7 +356,10 @@ export function ChatShell({
       <MessageList messages={messages} />
 
       <Composer
-        disabled={!canSend}
+        model={model}
+        onModelChange={setModel}
+        disableInput={isSending}
+        disableSubmit={!canSend}
         onChange={setDraft}
         onSubmit={() => {
           void submitMessage();

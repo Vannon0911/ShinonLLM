@@ -1,19 +1,31 @@
 # Documentation Index
 
-This folder contains product, architecture, and operational documentation for ShinonLLM.
+This folder contains product, architecture, release, and operational documentation for ShinonLLM.
 
 ## Start Here
 
 - [PRODUCT_POSITIONING.md](./PRODUCT_POSITIONING.md)
+- [ZIELARCHITEKTUR_MVP.md](./ZIELARCHITEKTUR_MVP.md)
+- [MVP_SCOPE_SCAN_0.2.1a.md](./MVP_SCOPE_SCAN_0.2.1a.md)
 - [TARGET_SYSTEM_OVERVIEW.md](./TARGET_SYSTEM_OVERVIEW.md)
 - [DETERMINISTISCHES_LLM_RUNTIME_KONZEPT.md](./DETERMINISTISCHES_LLM_RUNTIME_KONZEPT.md)
 - [REQUIREMENTS.md](./REQUIREMENTS.md)
 - [TESTING_AND_BASELINE.md](./TESTING_AND_BASELINE.md)
 
+## Presentation
+
+- [PRAESENTATION_0.2.1a.md](./PRAESENTATION_0.2.1a.md)
+- [assets/consumer-value-map.svg](./assets/consumer-value-map.svg)
+- [assets/user-journeys.svg](./assets/user-journeys.svg)
+- [assets/runtime-overview.svg](./assets/runtime-overview.svg)
+- [assets/shinon-vs-alternatives.svg](./assets/shinon-vs-alternatives.svg)
+- [assets/vision-roadmap.svg](./assets/vision-roadmap.svg)
+
 ## Release and Versioning
 
 - [releases/VERSIONING.md](./releases/VERSIONING.md)
 - [releases/RELEASE_PROCESS.md](./releases/RELEASE_PROCESS.md)
+- [releases/RELEASE_0.2.1a.md](./releases/RELEASE_0.2.1a.md)
 - [GITHUB_RELEASE_PLAYBOOK.md](./GITHUB_RELEASE_PLAYBOOK.md)
 - [../CHANGELOG.md](../CHANGELOG.md)
 
@@ -24,10 +36,6 @@ This folder contains product, architecture, and operational documentation for Sh
 - [assets/release-notes.svg](./assets/release-notes.svg)
 - [assets/release-rollback.svg](./assets/release-rollback.svg)
 - [assets/release-uiux-concept.svg](./assets/release-uiux-concept.svg)
-- [assets/consumer-value-map.svg](./assets/consumer-value-map.svg)
-- [assets/user-journeys.svg](./assets/user-journeys.svg)
-- [assets/shinon-vs-alternatives.svg](./assets/shinon-vs-alternatives.svg)
-- [assets/vision-roadmap.svg](./assets/vision-roadmap.svg)
 
 ### Preview
 
@@ -44,8 +52,6 @@ This folder contains product, architecture, and operational documentation for Sh
 - [LOCAL_LLAMACPP_SETUP.md](./LOCAL_LLAMACPP_SETUP.md)
 
 ## Legacy/Technical Contract Files
-
-The following files are kept for compatibility and implementation context:
 
 - `ARCHITECTURE`
 - `API_CONTRACT`

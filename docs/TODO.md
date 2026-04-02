@@ -4,14 +4,15 @@
 - Ziel: "Die Runtime denkt, das LLM formuliert Text."
 
 ## P0 (kritisch)
-- [ ] Default-Laufpfad klar auf Runtime -> Orchestrator -> Inference festziehen (kein impliziter Fallback als Standard).
+- [x] Default-Laufpfad auf Runtime -> Orchestrator -> Inference festgezogen (`orchestrateTurn` ruft `routeBackendCall`; `live=false` bleibt Default).
 - [ ] Gate-Skripte repo-self-contained machen (keine externen Pflichtpfade).
-- [ ] Route-Konsistenz fuer Chat-Endpunkt finalisieren (`/api/chat` vs `/chat`).
+- [x] Route-Konsistenz fuer Chat-Endpunkt finalisiert (`/api/chat` und `/chat` kompatibel).
 
 ## P1 (wichtig)
-- [ ] Memory-Chain formalisieren: Core / Session / Archive inkl. Decay- und Prioritaetsregeln.
-- [ ] Inference-Live-Modus als klar dokumentiertes Profil verankern.
+- [x] Session-Memory-Chain um Persistenzvertrag erweitert (`memory/src/session/sessionPersistence.ts`) inkl. Decay.
+- [x] Inference-Live-Modus als explizites Opt-in verankert (`memoryContext.inferenceLive===true`).
 - [ ] E2E in den Standard-Verify-Flow integrieren oder bewusst als optional dokumentieren.
+- [ ] SQLite im Zielbetrieb per nativer Laufzeit absichern (aktuell: Adapter-Vertrag + optional `node:sqlite` Loader in `httpServer.ts`).
 
 ## P2 (qualitaet)
 - [ ] CI-Workflows fuer `verify:backend` und Frontend-Build anlegen.

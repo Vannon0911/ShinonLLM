@@ -4,35 +4,28 @@ Stand: 2026-04-02
 
 ## Ziel
 
-Diese Seite definiert den vollständigen Testpfad für ShinonLLM und erklärt die Baseline-Integrity-Tests mit fail-closed Fokus.
+Diese Seite definiert den verbindlichen Testpfad fuer ShinonLLM mit fail-closed Fokus.
 
 ## Test-Scopes
 
-1. `Gates`
+1. Gates
 - Contract-Validierung
 - Replay-/Determinismus-Validierung
 - Baseline-Integrity (Seed-Doppeltests + Action-Set-Abgleich)
 
-2. `Backend`
-- Unit-Tests für Orchestrator/Router
-- Integrationstests für Fallback- und Chat-Flow
+2. Backend
+- Unit: Orchestrator, Router, Session-Persistenz
+- Integration: Fallback- und Chat-Flow
 
-3. `Frontend`
-- Build/Type-Checks als Integritätsgrenze vor Release
+3. Frontend
+- Build/Type-Checks als Integritaetsgrenze vor Release
 
 ## Standardbefehle
 
 ```powershell
-# Baseline Integrität explizit
 npm run test:baseline-integrity
-
-# Alle Gates
 npm run test:gates
-
-# Vollständiger Backend-Verify-Flow
 npm run verify:backend
-
-# Frontend
 cd frontend
 npm run build
 ```
@@ -41,16 +34,16 @@ npm run build
 
 Script: `tests/gates/baseline-integrity.spec.ts`
 
-Geprüfte Invarianten:
+Gepruefte Invarianten:
 
 1. Deterministische Seeds
 - gleicher Seed doppelt -> gleicher Replay-Hash
 - gleiche Payload mit anderer Key-Reihenfolge -> gleicher Replay-Hash
 
-2. Sequenz-Integrität
+2. Sequenz-Integritaet
 - gleiche Payload mit anderer Sequence -> anderer Replay-Hash
 
-3. Action-Set-Integrität
+3. Action-Set-Integritaet
 - erlaubte Action (`send_message`) innerhalb `allowedActions` -> akzeptiert
 - unerlaubte Action ohne `allowedActions` -> blockiert
 - fehlerhafte `allowedActions`-Typen -> blockiert
@@ -64,19 +57,25 @@ Geprüfte Invarianten:
 - `revision <= 0` -> blockiert
 - negative `sequence` -> blockiert
 
-## Maschinenlesbare Testline
+## Zusatzabdeckung
 
-Der Baseline-Test gibt eine standardisierte Zeile aus:
+1. Session-Persistenz
+- `tests/unit/session-persistence.spec.ts` prueft In-Memory-Persistenz (`load`, `append`, `decay`)
+- gleiches Script prueft SQLite-Adapter-Contract (Schema/Insert/Select)
+
+2. Inference-Default-Policy
+- Router-/Fallback-Tests pruefen `raw.mode=deterministic-offline` als Standard
+- Live-Inference nur per Opt-in (`options.live === true`)
+
+## Maschinenlesbare Testline
 
 ```text
 testline | seed_pair=replay-gate-run|rev=1|seq=7 | replay_hash_equal=1 | sequence_variant_diff=1 | action_set_declared=send_message,log_event | action_send_message=accepted | action_blocked_action=rejected
 ```
 
-Diese Zeile ist als kompakter Beleg für Seed-Doppeltest + Action-Set-Abgleich gedacht.
-
 ## Release-Anforderung
 
-Vor Tag/Release müssen mindestens folgende Befehle ohne Abbruch durchlaufen:
+Vor Tag/Release muessen mindestens folgende Befehle ohne Abbruch durchlaufen:
 
 1. `npm run verify:backend`
 2. `cd frontend && npm run build`

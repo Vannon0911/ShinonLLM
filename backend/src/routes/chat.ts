@@ -1,4 +1,8 @@
 import { orchestrateTurn as defaultRuntimeOrchestrateTurn } from "../../../orchestrator/src/pipeline/orchestrateTurn.js";
+import {
+  createInMemorySessionMemoryPersistence,
+  type SessionMemoryPersistence,
+} from "../../../memory/src/session/sessionPersistence.js";
 
 export type ChatRequestDto = {
   message?: string;
@@ -87,6 +91,9 @@ export type ChatRouteDependencies = {
     input: NormalizedChatTurn
   ) => Promise<unknown> | unknown;
   memoryContext?: Record<string, unknown>;
+  sessionMemoryPersistence?: SessionMemoryPersistence;
+  memoryTtlSeconds?: number;
+  decayAfterWrite?: boolean;
 };
 
 export type ChatRouteHandler = {
@@ -345,6 +352,44 @@ function normalizeChatTurn(request: ChatRequestDto, memoryContext: Record<string
   };
 }
 
+function normalizeIdentifier(value: unknown): string | null {
+  return isNonEmptyString(value) ? value.trim() : null;
+}
+
+function resolveRuntimeMemoryContext(
+  request: ChatRequestDto,
+  baseMemoryContext: Record<string, unknown>,
+  persistence: SessionMemoryPersistence,
+): Record<string, unknown> {
+  const sessionId = normalizeIdentifier(request.sessionId);
+  const conversationId = normalizeIdentifier(request.conversationId);
+
+  if (!sessionId || !conversationId) {
+    return Object.freeze({ ...baseMemoryContext });
+  }
+
+  const sessionEntries = persistence.load({
+    sessionId,
+    conversationId,
+  });
+
+  return Object.freeze({
+    ...baseMemoryContext,
+    entries: sessionEntries.map((entry) =>
+      Object.freeze({
+        id: entry.id,
+        type: entry.role,
+        content: entry.content,
+        sessionId: entry.sessionId,
+        conversationId: entry.conversationId,
+        createdAt: entry.createdAt,
+        expiresAt: entry.expiresAt,
+        metadata: entry.metadata,
+      }),
+    ),
+  });
+}
+
 function readRequestId(request: ChatRequestDto, userText: string, history: NormalizedChatTurn["history"]): string {
   if (isNonEmptyString(request.requestId)) {
     return request.requestId.trim();
@@ -408,7 +453,12 @@ async function executeChatRoute(
     : rawPayload;
   const validatedRequest = readValidatedRequest(middlewareResult, rawPayload);
 
-  const memoryContext = dependencies.memoryContext ?? {};
+  const persistence = dependencies.sessionMemoryPersistence ?? createInMemorySessionMemoryPersistence();
+  const memoryContext = resolveRuntimeMemoryContext(
+    validatedRequest,
+    dependencies.memoryContext ?? {},
+    persistence,
+  );
   const normalized = normalizeChatTurn(validatedRequest, memoryContext);
   const requestId = readRequestId(validatedRequest, normalized.userText, normalized.history);
 
@@ -417,6 +467,30 @@ async function executeChatRoute(
     const orchestratorResult = await runOrchestrator(normalized);
 
     const assistant = resolveAssistantText(orchestratorResult, normalized.userText);
+    const sessionId = normalizeIdentifier(validatedRequest.sessionId);
+    const conversationId = normalizeIdentifier(validatedRequest.conversationId);
+    if (sessionId && conversationId) {
+      persistence.append([
+        {
+          sessionId,
+          conversationId,
+          role: "user",
+          content: normalized.userText,
+          ttlSeconds: dependencies.memoryTtlSeconds,
+        },
+        {
+          sessionId,
+          conversationId,
+          role: "assistant",
+          content: assistant.text,
+          ttlSeconds: dependencies.memoryTtlSeconds,
+        },
+      ]);
+      if (dependencies.decayAfterWrite === true) {
+        persistence.decay();
+      }
+    }
+
     return buildSuccessResponse(normalized, assistant.text, requestId, assistant.source);
   } catch (error) {
     const code = mapErrorCode(error);
@@ -431,9 +505,15 @@ async function executeChatRoute(
 export function createChatRoute(
   dependencies: ChatRouteDependencies = {}
 ): ChatRouteHandler {
+  const sessionMemoryPersistence =
+    dependencies.sessionMemoryPersistence ?? createInMemorySessionMemoryPersistence();
+
   const handler = (async (request: unknown, response?: ChatHttpResponseLike) => {
     try {
-      const body = await executeChatRoute(request, dependencies);
+      const body = await executeChatRoute(request, {
+        ...dependencies,
+        sessionMemoryPersistence,
+      });
       const statusCode = body.ok ? 200 : ERROR_STATUS_BY_CODE[body.error.code];
       return finalizeResponse(response, statusCode, body);
     } catch (error) {

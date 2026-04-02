@@ -1,17 +1,18 @@
 {
   "name": "llmrab-runtime",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.2.1-a",
   "type": "module",
   "scripts": {
     "test:baseline-integrity": "node --import tsx ./tests/gates/baseline-integrity.spec.ts",
     "test:determinism": "node --import tsx ./tests/gates/replay-gate.spec.ts",
     "test:gates": "node --import tsx ./tests/gates/contract-gate.spec.ts && node --import tsx ./tests/gates/replay-gate.spec.ts && node --import tsx ./tests/gates/baseline-integrity.spec.ts",
-    "test:backend": "node --import tsx ./tests/unit/orchestrator.spec.ts && node --import tsx ./tests/unit/router.spec.ts && node --import tsx ./tests/integration/fallback.spec.ts && node --import tsx ./tests/integration/chat-flow.spec.ts",
-    "verify:backend": "node --import tsx ./tests/gates/contract-gate.spec.ts && node --import tsx ./tests/gates/replay-gate.spec.ts && node --import tsx ./tests/gates/baseline-integrity.spec.ts && node --import tsx ./tests/unit/orchestrator.spec.ts && node --import tsx ./tests/unit/router.spec.ts && node --import tsx ./tests/integration/fallback.spec.ts && node --import tsx ./tests/integration/chat-flow.spec.ts"
+    "test:backend": "node --import tsx ./tests/unit/orchestrator.spec.ts && node --import tsx ./tests/unit/router.spec.ts && node --import tsx ./tests/unit/session-persistence.spec.ts && node --import tsx ./tests/integration/fallback.spec.ts && node --import tsx ./tests/integration/chat-flow.spec.ts",
+    "verify:backend": "node --import tsx ./tests/gates/contract-gate.spec.ts && node --import tsx ./tests/gates/replay-gate.spec.ts && node --import tsx ./tests/gates/baseline-integrity.spec.ts && node --import tsx ./tests/unit/orchestrator.spec.ts && node --import tsx ./tests/unit/router.spec.ts && node --import tsx ./tests/unit/session-persistence.spec.ts && node --import tsx ./tests/integration/fallback.spec.ts && node --import tsx ./tests/integration/chat-flow.spec.ts"
   },
   "devDependencies": {
     "tsx": "^4.20.6",
     "typescript": "^5.9.3"
   }
 }
+

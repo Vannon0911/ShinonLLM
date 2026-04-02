@@ -182,6 +182,47 @@ export async function chatflowspecMain(
   assert.equal(emptyResult.uiEvents.at(-1)?.type, "chat/request-failed");
   assert.equal(emptyResult.error.code, "EMPTY_MESSAGE");
   assert.equal(emptyResult.error.retryable, false);
+
+  const memoryEntryCounts: number[] = [];
+  const memoryAwareRoute = chatRouteFactory({
+    orchestrateTurn: (input) => {
+      const memoryEntries = Array.isArray((input.memoryContext as { entries?: unknown }).entries)
+        ? ((input.memoryContext as { entries: unknown[] }).entries.length)
+        : 0;
+      memoryEntryCounts.push(memoryEntries);
+      return {
+        reply: `memory_entries=${memoryEntries}`,
+        message: {
+          role: "assistant",
+          content: `memory_entries=${memoryEntries}`,
+        },
+        source: "orchestrator",
+      };
+    },
+  });
+
+  const firstMemoryTurn = await memoryAwareRoute.handle({
+    body: {
+      message: "first memory turn",
+      sessionId: "memory-session-1",
+      conversationId: "memory-conversation-1",
+      requestId: "memory-req-1",
+    },
+  });
+  assertSuccessResponse(firstMemoryTurn);
+  assert.equal(firstMemoryTurn.data.reply, "memory_entries=0");
+
+  const secondMemoryTurn = await memoryAwareRoute.handle({
+    body: {
+      message: "second memory turn",
+      sessionId: "memory-session-1",
+      conversationId: "memory-conversation-1",
+      requestId: "memory-req-2",
+    },
+  });
+  assertSuccessResponse(secondMemoryTurn);
+  assert.equal(memoryEntryCounts[0], 0);
+  assert.equal((memoryEntryCounts[1] ?? 0) >= 2, true);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

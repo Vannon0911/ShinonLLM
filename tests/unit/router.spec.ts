@@ -123,6 +123,7 @@ async function assertRouteSuccess(
   assert.equal(response.requestId, expected.requestId);
   assert.equal(response.sessionId, expected.sessionId);
   assert.equal(response.conversationId, expected.conversationId);
+  assert.equal((response.raw as { mode?: string }).mode, "deterministic-offline");
 }
 
 async function assertRouteFailure(
