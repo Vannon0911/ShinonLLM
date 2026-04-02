@@ -2,6 +2,7 @@ import { sha256Hex } from "../../../shared/src/utils/hash.js";
 import { stableJson } from "../../../shared/src/utils/stableJson.js";
 import { callLlamaCpp } from "../adapters/llamacppAdapter.js";
 import { callOllama } from "../adapters/ollamaAdapter.js";
+import { waitForBackend, resolveHealthUrl } from "../retry/backendRetry.js";
 
 type PlainObject = Record<string, unknown>;
 
@@ -195,7 +196,8 @@ function normalizeRouteDecision(candidate: unknown): BackendRouteDecision {
     baseUrl,
     endpoint,
     timeoutMs: toInteger(candidate.timeoutMs, 0) || undefined,
-    stream: candidate.stream !== false,
+    // FIX: stream defaults to false — adapters don't stream yet, true was a lying default
+    stream: candidate.stream === true,
     headers: candidate.headers !== undefined ? Object.freeze({ ...(candidate.headers as Record<string, string>) }) : undefined,
     policyId: isNonEmptyString(candidate.policyId) ? candidate.policyId.trim() : undefined,
     options: candidate.options !== undefined ? Object.freeze({ ...candidate.options }) : undefined,
@@ -349,11 +351,27 @@ async function callLiveBackend(
   decision: BackendRouteDecision,
   promptPayload: PromptPayload,
 ): Promise<NormalizedModelResponse> {
-  const promptText = toPromptText(promptPayload);
   const requestId = promptPayload.requestId ?? decision.requestId;
   const sessionId = promptPayload.sessionId ?? decision.sessionId;
   const conversationId = promptPayload.conversationId ?? decision.conversationId;
-  const streamed = decision.stream !== false;
+  const streamed = decision.stream === true;
+
+  // Retry: probe backend health before committing to the adapter call.
+  // This prevents the offline-fallback from silently echoing user input
+  // when the backend is just slow to start rather than permanently down.
+  const retryAttempts = 3;
+  const healthUrl = decision.backend === "llamacpp" || decision.backend === "ollama"
+    ? resolveHealthUrl(decision.backend)
+    : null;
+
+  if (healthUrl) {
+    await waitForBackend({
+      healthUrl,
+      maxAttempts: retryAttempts,
+      initialDelayMs: 800,
+      maxDelayMs: 5000,
+    });
+  }
 
   if (decision.backend === "ollama") {
     const result = await callOllama(decision, promptPayload);
