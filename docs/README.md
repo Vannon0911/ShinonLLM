@@ -12,6 +12,12 @@ This is the single verified snapshot of "what is true right now" (scope boundari
 
 - [ARCHITECTURE_OVERVIEW.md](./ARCHITECTURE_OVERVIEW.md)
 - [DETERMINISTISCHES_LLM_RUNTIME_KONZEPT.md](./DETERMINISTISCHES_LLM_RUNTIME_KONZEPT.md)
+- [MEMORY_POLICY.md](./MEMORY_POLICY.md)
+
+## Validation and Operations
+
+- [validation/MATRIX__VALIDATION_GATES.md](./validation/MATRIX__VALIDATION_GATES.md)
+- [OPS_PLAYBOOKS.md](./OPS_PLAYBOOKS.md)
 
 ## Operations (Local)
 

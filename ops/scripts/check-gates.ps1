@@ -16,9 +16,9 @@ function Invoke-GateChecks {
             throw "Unable to resolve script path"
         }
 
-        $runtimeRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $scriptPath))
-        $repoRoot = Split-Path -Parent $runtimeRoot
-        $defaultMatrixPath = Join-Path $repoRoot 'PROJECT_BLUEPRINT_FINAL\04_matrix\MATRIX__VALIDATION_GATES.md'
+        $scriptDir = Split-Path -Parent $scriptPath
+        $repoRoot = Split-Path -Parent (Split-Path -Parent $scriptDir)
+        $defaultMatrixPath = Join-Path $repoRoot 'docs\validation\MATRIX__VALIDATION_GATES.md'
         $defaultTargetPath = $scriptPath
     }
 

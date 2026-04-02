@@ -13,6 +13,7 @@ The runtime thinks, the LLM formulates text.
 - Contract-first orchestration is active in `orchestrator`.
 - Inference routing is active in `inference` with mandatory offline evaluator evidence in live path.
 - Session memory handling and decay path exist in `memory`.
+- SQLite session memory migration path is active via `PRAGMA user_version` (v0 -> v1).
 - Determinism and baseline gates exist in `tests/gates`.
 
 ## Determinism and verification policy
@@ -50,7 +51,7 @@ Older split notes and per-directory `report.md` artifacts were removed to avoid 
 ## Open risks
 
 - Some local `.next` files may remain locked by running processes during cleanup.
-- External-path assumptions in legacy scripts still need full removal.
+- External-path assumptions in legacy scripts were removed; gate checks now resolve repo-local matrix paths.
 
 ## Next checkpoint
 

@@ -20,8 +20,7 @@ $npmCmd = Resolve-NpmCommand
 
 Push-Location $repoRoot
 try {
-  & $npmCmd run verify:backend
-  & $npmCmd --prefix frontend run build
+  & $npmCmd run verify:full:node
 }
 finally {
   Pop-Location

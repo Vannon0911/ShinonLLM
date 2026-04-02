@@ -23,6 +23,12 @@ In practice, this means:
 - `telemetry/`: Replay support and determinism artifacts.
 - `tests/`: Unit/integration/e2e and gate checks (contract/replay/baseline).
 
+## Memory policy reference
+
+Detailed runtime memory behavior (TTL, decay retention, SQLite opt-in, and fail-closed rules) is maintained in:
+
+- [MEMORY_POLICY.md](./MEMORY_POLICY.md)
+
 ## Hot Path (Request/Response)
 
 ```mermaid
@@ -57,4 +63,3 @@ ShinonLLM treats determinism and contract integrity as release conditions:
 - Baseline integrity ensures the expected deterministic baseline is stable across runs.
 
 See [docs/releases/RELEASE_PROCESS.md](./releases/RELEASE_PROCESS.md) for the operational checklist.
-

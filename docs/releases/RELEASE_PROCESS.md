@@ -8,17 +8,19 @@ Dieses Dokument definiert den standardisierten Release-Ablauf fuer ShinonLLM.
 2. Version in allen Paketen angleichen (root/backend/frontend).
 3. `CHANGELOG.md` aktualisieren und `[Unreleased]` in neue Version ueberfuehren.
 4. Runtime und Qualitaets-Gates ausfuehren:
-   - `npm run verify:backend`
-   - `npm --prefix frontend run build`
-5. Produktdoku und Einstieg pruefen:
+   - `npm run verify:full:node`
+5. Smoke Snapshot fuer Release Notes erzeugen:
+   - `powershell -ExecutionPolicy Bypass -File ops/scripts/release-smoke.ps1`
+   - Baseline-`testline` in Release Notes uebernehmen.
+6. Produktdoku und Einstieg pruefen:
    - `README.md`
    - `docs/README.md`
    - `docs/HANDSHAKE_CURRENT_STATE.md`
    - `docs/TODO.md`
-6. Pull Request finalisieren und CI-Status sicherstellen.
-7. Tag erstellen: `vMAJOR.MINOR.PATCH`.
-8. Tag pushen und automatischen GitHub Release pruefen.
-9. Release Notes, Risiken und ggf. Follow-up Tickets dokumentieren.
+7. Pull Request finalisieren und CI-Status sicherstellen.
+8. Tag erstellen: `vMAJOR.MINOR.PATCH`.
+9. Tag pushen und automatischen GitHub Release pruefen.
+10. Release Notes, Risiken und ggf. Follow-up Tickets dokumentieren.
 
 ## Release Notes Struktur
 

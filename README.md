@@ -4,6 +4,8 @@
 
 Release: **0.2.3** (root/backend/frontend packages: `0.2.3`)
 
+[![CI](https://github.com/<OWNER>/<REPO>/actions/workflows/ci.yml/badge.svg)](https://github.com/<OWNER>/<REPO>/actions/workflows/ci.yml)
+
 ![ShinonLLM Runtime Overview](./docs/assets/runtime-overview.svg)
 
 ## What It Is
@@ -131,6 +133,7 @@ Release governance:
 
 - Contribution rules: [CONTRIBUTING.md](./CONTRIBUTING.md)
 - Security policy: [SECURITY.md](./SECURITY.md)
+- License: [Apache-2.0](./LICENSE)
 
 ## Source of Truth Notice
 

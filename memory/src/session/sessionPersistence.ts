@@ -43,6 +43,7 @@ export type SessionMemorySqliteAdapter = Readonly<{
 
 const DEFAULT_LIMIT = 64;
 const DEFAULT_KEEP_LATEST = 128;
+const SQLITE_SCHEMA_VERSION = 1;
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -184,6 +185,22 @@ function normalizePersistedRow(row: Record<string, unknown>): PersistedSessionMe
   });
 }
 
+function normalizeSqliteUserVersion(value: unknown): number {
+  if (typeof value === "number" && Number.isInteger(value) && value >= 0) {
+    return value;
+  }
+  if (typeof value === "bigint") {
+    return value >= 0n ? Number(value) : -1;
+  }
+  if (typeof value === "string" && value.trim().length > 0) {
+    const parsed = Number.parseInt(value.trim(), 10);
+    if (Number.isInteger(parsed) && parsed >= 0) {
+      return parsed;
+    }
+  }
+  return -1;
+}
+
 export function createInMemorySessionMemoryPersistence(
   initialEntries: ReadonlyArray<SessionMemoryAppendInput> = [],
 ): SessionMemoryPersistence {
@@ -235,7 +252,7 @@ export function createInMemorySessionMemoryPersistence(
   });
 }
 
-function ensureSqliteSchema(adapter: SessionMemorySqliteAdapter): void {
+function createSqliteSchemaV1(adapter: SessionMemorySqliteAdapter): void {
   adapter.run(
     [
       "CREATE TABLE IF NOT EXISTS session_memory_entries (",
@@ -256,6 +273,51 @@ function ensureSqliteSchema(adapter: SessionMemorySqliteAdapter): void {
   adapter.run(
     "CREATE INDEX IF NOT EXISTS idx_session_memory_expiry ON session_memory_entries(expires_at);",
   );
+}
+
+function readSqliteUserVersion(adapter: SessionMemorySqliteAdapter): number {
+  const rows = adapter.all("PRAGMA user_version");
+  const firstRow = rows[0];
+  if (!firstRow) {
+    failClosed("sqlite user_version could not be read");
+  }
+
+  const value =
+    firstRow.user_version ??
+    firstRow.USER_VERSION ??
+    firstRow.User_Version ??
+    firstRow.value;
+
+  const normalized = normalizeSqliteUserVersion(value);
+  if (normalized < 0) {
+    failClosed("sqlite user_version must be a non-negative integer");
+  }
+  return normalized;
+}
+
+function writeSqliteUserVersion(adapter: SessionMemorySqliteAdapter, nextVersion: number): void {
+  adapter.run(`PRAGMA user_version = ${nextVersion}`);
+}
+
+function ensureSqliteSchema(adapter: SessionMemorySqliteAdapter): void {
+  const currentVersion = readSqliteUserVersion(adapter);
+  if (currentVersion > SQLITE_SCHEMA_VERSION) {
+    failClosed(
+      `sqlite schema version ${currentVersion} is newer than supported version ${SQLITE_SCHEMA_VERSION}`,
+    );
+  }
+
+  if (currentVersion === 0) {
+    createSqliteSchemaV1(adapter);
+    writeSqliteUserVersion(adapter, 1);
+    return;
+  }
+
+  if (currentVersion === 1) {
+    return;
+  }
+
+  failClosed(`sqlite schema version ${currentVersion} is unknown`);
 }
 
 export function createSqliteSessionMemoryPersistence(
