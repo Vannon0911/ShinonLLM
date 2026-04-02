@@ -7,6 +7,8 @@ This folder contains product, architecture, and operational documentation for Sh
 - [PRODUCT_POSITIONING.md](./PRODUCT_POSITIONING.md)
 - [TARGET_SYSTEM_OVERVIEW.md](./TARGET_SYSTEM_OVERVIEW.md)
 - [DETERMINISTISCHES_LLM_RUNTIME_KONZEPT.md](./DETERMINISTISCHES_LLM_RUNTIME_KONZEPT.md)
+- [REQUIREMENTS.md](./REQUIREMENTS.md)
+- [TESTING_AND_BASELINE.md](./TESTING_AND_BASELINE.md)
 
 ## Release and Versioning
 

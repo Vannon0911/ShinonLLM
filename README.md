@@ -113,6 +113,7 @@ Voraussetzung: Node.js LTS
 ```powershell
 npm install
 cd frontend; npm install; cd ..
+npm run test:baseline-integrity
 npm run verify:backend
 cd frontend; npm run build; cd ..
 ```
@@ -125,6 +126,8 @@ Release-Ablauf auf GitHub:
 
 ### Dokumentation
 - [docs/README.md](./docs/README.md)
+- [docs/REQUIREMENTS.md](./docs/REQUIREMENTS.md)
+- [docs/TESTING_AND_BASELINE.md](./docs/TESTING_AND_BASELINE.md)
 - [docs/TARGET_SYSTEM_OVERVIEW.md](./docs/TARGET_SYSTEM_OVERVIEW.md)
 - [docs/DETERMINISTISCHES_LLM_RUNTIME_KONZEPT.md](./docs/DETERMINISTISCHES_LLM_RUNTIME_KONZEPT.md)
 - [docs/releases/RELEASE_PROCESS.md](./docs/releases/RELEASE_PROCESS.md)
