@@ -1,74 +1,74 @@
 # ShinonLLM
 
-GitHub-Repository zur Vorstellung einer local-first LLM-Runtime mit Fokus auf Nachvollziehbarkeit, Determinismus und kontrollierte Weiterentwicklung.
+ShinonLLM is a runtime-first companion stack for local and hybrid LLM workflows.
 
-## Vision (Endzustand)
+Core principle: **The runtime thinks, the LLM formulates text.**
 
-ShinonLLM soll als verlassliche Runtime dienen, bei der Verhalten nicht erraten werden muss: Eingaben, Entscheidungen und Ergebnisse bleiben pruefbar und reproduzierbar.
+## Product Vision
 
-## Produktidee in einem Satz
+ShinonLLM is built as a deterministic runtime product, not a prompt playground.
+The runtime owns state, memory policy, scoring, and context boundaries.
+The model is intentionally scoped to language output, tone adaptation, and response formatting.
 
-Ein **Deterministic Local LLM Runtime Kernel (Contract-First)** fuer reale Workflows statt Black-Box-Demo.
+## Why This Exists
 
-## Aktueller Stand
+Typical companion stacks blur responsibility: the model decides too much, memory drifts, and behavior becomes hard to verify.
+ShinonLLM enforces strict runtime ownership so decisions are testable, replayable, and operationally controllable.
 
-| Bereich | Stand |
-|---|---|
-| Backend-Routen (`/health`, `/chat`) | Implemented |
-| Contract-Gates (`tests/gates/*`) | Implemented |
-| Determinismus-/Replay-Gates | Implemented |
-| Inference-Adapter (`ollama`, `llama.cpp`) | Implemented |
-| End-to-End Standardpfad mit Live-Inference | Partially integrated |
-| GitHub-Repo-Praesentation | In progress |
+## Unique Selling Points
 
-## Current vs. Target Behavior
+- Runtime-first control plane with explicit contracts and fail-closed behavior.
+- Determinism gates and replay checks for reproducible outputs.
+- Contract-scoped memory writes instead of free-form model mutation.
+- Local-first architecture with adapter-ready inference integration.
+- Clear separation between orchestration logic and text generation logic.
 
-- Current behavior: stabiler Runtime-Kern mit Gates; Inference ist vorhanden, aber nicht durchgaengig der Default-Pfad.
-- Target behavior: klarer Standardfluss von Request -> Orchestrator -> Inference -> Response mit transparenter Verifikation.
+## Runtime Model (Visual)
 
-## 5-Minuten-Quickstart (nur fuer Repo-Besucher)
+![ShinonLLM runtime overview](./docs/assets/runtime-overview.svg)
 
-Voraussetzung: Node.js LTS installiert.
+## ShinonLLM vs Typical Companion Stacks
+
+| Area | ShinonLLM | Typical Companion Stack |
+|---|---|---|
+| Decision authority | Runtime contracts and gates | Model heuristics |
+| Memory writes | Contract-gated, fail-closed | Often implicit and permissive |
+| Reproducibility | Replay and gate checks | Best-effort, hard to prove |
+| Context assembly | Runtime curated package | Prompt growth and drift |
+| Product operations | Explicit release and gate process | Ad hoc scripts and manual checks |
+
+## Clear Objectives
+
+1. Ship a runtime that is explainable under load, not only in demos.
+2. Keep model behavior bounded by deterministic runtime contracts.
+3. Make releases audit-ready through CI gates and changelog discipline.
+
+## Quickstart
+
+Prerequisites: Node.js LTS.
 
 ```powershell
 npm install
 cd frontend; npm install; cd ..
 npm run verify:backend
+cd frontend; npm run build; cd ..
 ```
 
-Erwartung:
-- Gate- und Backend-Checks laufen erfolgreich durch.
-- Danach kann die Runtime lokal gestartet und weiter evaluiert werden.
+## Documentation Map
 
-## Was als Naechstes fehlt
+- Product framing: [docs/PRODUCT_POSITIONING.md](./docs/PRODUCT_POSITIONING.md)
+- Docs index: [docs/README.md](./docs/README.md)
+- Runtime concept: [docs/DETERMINISTISCHES_LLM_RUNTIME_KONZEPT.md](./docs/DETERMINISTISCHES_LLM_RUNTIME_KONZEPT.md)
+- Target overview: [docs/TARGET_SYSTEM_OVERVIEW.md](./docs/TARGET_SYSTEM_OVERVIEW.md)
+- Versioning policy: [docs/releases/VERSIONING.md](./docs/releases/VERSIONING.md)
+- Release process: [docs/releases/RELEASE_PROCESS.md](./docs/releases/RELEASE_PROCESS.md)
+- Changelog: [CHANGELOG.md](./CHANGELOG.md)
 
-- sichtbare CI-Checks im Repo (GitHub Actions)
-- klarerer Live-Run-Pfad fuer Inference als Default
-- produktnahe Betriebsdoku statt nur Contract-Snippets
+## Source of Truth
 
-## Projektbild
+`README.md` is not Source of Truth.
 
-```mermaid
-flowchart LR
-  V["Vision"] --> K["Runtime Kernel"]
-  K --> Q["Qualitaets-Gates"]
-  K --> I["Inference Layer"]
-  Q --> R["Reproduzierbares Verhalten"]
-  I --> R
-```
-
-```text
-Vision -> Kernel -> Gates + Inference -> reproduzierbares Verhalten
-```
-
-## Ueber mich
-
-Ich baue ShinonLLM als langfristiges Projekt mit klarem Anspruch: robuste Basis, ehrliche Darstellung des Ist-Zustands und iterative Produktreife.
-
-## Source-of-Truth Hierarchie
-
-`README.md` ist **nicht** Source of Truth.
-
-Verbindlich sind:
-- [LLM_ENTRY.md](./LLM_ENTRY.md) (Aenderungs- und Integrationsregeln)
-- [docs/LLM_ENTRY_CONFORMITY.md](./docs/LLM_ENTRY_CONFORMITY.md) (Konformitaetsrahmen)
+Authoritative references:
+- [LLM_ENTRY.md](./LLM_ENTRY.md)
+- [docs/LLM_ENTRY_CONFORMITY.md](./docs/LLM_ENTRY_CONFORMITY.md)
+- [docs/DETERMINISTISCHES_LLM_RUNTIME_KONZEPT.md](./docs/DETERMINISTISCHES_LLM_RUNTIME_KONZEPT.md)
