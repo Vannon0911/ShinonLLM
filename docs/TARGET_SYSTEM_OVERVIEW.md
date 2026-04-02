@@ -1,7 +1,7 @@
 # Target System Overview
 
 Stand: 2026-04-02
-Release-Basis: 0.2.1a (Package `0.2.1-a`)
+Release-Basis: 0.2.3 (Package `0.2.3`)
 
 ## Kernfakt
 
@@ -43,4 +43,5 @@ Das Zielsystem ist ein Runtime-first Lokalstack fuer Chat/QA mit klarer Trennung
 
 ## Scope-Hinweis
 
-Die vollstaendige Core/Session/Archive-Policy-Engine ist als naechste Ausbaustufe geplant, aber nicht Teil des 0.2.1a MVP-Scope.
+Die vollstaendige Core/Session/Archive-Policy-Engine ist als naechste Ausbaustufe geplant, aber nicht Teil des 0.2.3 MVP-Scope.
+

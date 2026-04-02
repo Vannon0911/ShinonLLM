@@ -40,6 +40,10 @@ type OrchestrateTurnError = Readonly<{
 type PromptBundle = Readonly<{
   prompt: string;
   memorySummary: string;
+  runtimePlan: Readonly<{
+    intent: "question" | "analysis" | "code" | "summary";
+    nextAction: "answer" | "explain" | "propose_patch" | "summarize";
+  }>;
 }>;
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -144,6 +148,20 @@ function summarizeMemory(memoryContext: Readonly<Record<string, unknown>>): stri
   return entries.join(" | ");
 }
 
+function buildRuntimePlan(input: OrchestrateTurnInput): PromptBundle["runtimePlan"] {
+  const text = `${input.userText} ${input.history.map((entry) => entry.content).join(" ")}`.toLowerCase();
+  if (/(code|bug|error|typescript|javascript|python|sql|patch)/u.test(text)) {
+    return Object.freeze({ intent: "code", nextAction: "propose_patch" });
+  }
+  if (/(summarize|summary|zusammenfass|tl;dr|tldr)/u.test(text)) {
+    return Object.freeze({ intent: "summary", nextAction: "summarize" });
+  }
+  if (/(analy|compare|bewert|audit|review)/u.test(text)) {
+    return Object.freeze({ intent: "analysis", nextAction: "explain" });
+  }
+  return Object.freeze({ intent: "question", nextAction: "answer" });
+}
+
 function buildPrompt(input: OrchestrateTurnInput): PromptBundle {
   const normalized = normalizeInput(input);
   const historyBlock = normalized.history.length
@@ -152,8 +170,10 @@ function buildPrompt(input: OrchestrateTurnInput): PromptBundle {
         .join("\n")
     : "HISTORY: <empty>";
   const memorySummary = summarizeMemory(normalized.memoryContext);
+  const runtimePlan = buildRuntimePlan(normalized);
   const prompt = [
     "SYSTEM: Produce a concise, valid assistant response.",
+    `PLAN: intent=${runtimePlan.intent} next_action=${runtimePlan.nextAction}`,
     `USER: ${normalized.userText}`,
     historyBlock,
     memorySummary.length > 0 ? `MEMORY: ${memorySummary}` : "MEMORY: <empty>",
@@ -162,6 +182,7 @@ function buildPrompt(input: OrchestrateTurnInput): PromptBundle {
   return Object.freeze({
     prompt,
     memorySummary,
+    runtimePlan,
   });
 }
 
@@ -235,7 +256,6 @@ export async function orchestrateTurn(input: OrchestrateTurnInput): Promise<Orch
     const backend = resolveBackend(normalized.memoryContext);
     const fallbackBackend = resolveFallbackBackend(backend, normalized.memoryContext);
     const model = resolveModel(normalized.memoryContext, promptBundle.prompt);
-    const live = normalized.memoryContext.inferenceLive === true;
     const allowFallback = normalized.memoryContext.allowFallback !== false;
 
     const routed = await routeBackendCall(
@@ -248,7 +268,8 @@ export async function orchestrateTurn(input: OrchestrateTurnInput): Promise<Orch
         sessionId: normalized.request?.sessionId,
         conversationId: normalized.request?.conversationId,
         options: Object.freeze({
-          live,
+          live: true,
+          runtimePlan: promptBundle.runtimePlan,
         }),
       }),
       Object.freeze({

@@ -6,7 +6,8 @@ This folder contains product, architecture, release, and operational documentati
 
 - [PRODUCT_POSITIONING.md](./PRODUCT_POSITIONING.md)
 - [ZIELARCHITEKTUR_MVP.md](./ZIELARCHITEKTUR_MVP.md)
-- [MVP_SCOPE_SCAN_0.2.1a.md](./MVP_SCOPE_SCAN_0.2.1a.md)
+- [MVP_SCOPE_SCAN_0.2.3.md](./MVP_SCOPE_SCAN_0.2.3.md)
+- [REPO_HYGIENE_0.2.3.md](./REPO_HYGIENE_0.2.3.md)
 - [TARGET_SYSTEM_OVERVIEW.md](./TARGET_SYSTEM_OVERVIEW.md)
 - [DETERMINISTISCHES_LLM_RUNTIME_KONZEPT.md](./DETERMINISTISCHES_LLM_RUNTIME_KONZEPT.md)
 - [REQUIREMENTS.md](./REQUIREMENTS.md)
@@ -14,7 +15,8 @@ This folder contains product, architecture, release, and operational documentati
 
 ## Presentation
 
-- [PRAESENTATION_0.2.1a.md](./PRAESENTATION_0.2.1a.md)
+- [PRAESENTATION_0.2.3.md](./PRAESENTATION_0.2.3.md)
+- [GITHUB_PRESENTATION_0.2.3.md](./GITHUB_PRESENTATION_0.2.3.md)
 - [assets/consumer-value-map.svg](./assets/consumer-value-map.svg)
 - [assets/user-journeys.svg](./assets/user-journeys.svg)
 - [assets/runtime-overview.svg](./assets/runtime-overview.svg)
@@ -25,7 +27,7 @@ This folder contains product, architecture, release, and operational documentati
 
 - [releases/VERSIONING.md](./releases/VERSIONING.md)
 - [releases/RELEASE_PROCESS.md](./releases/RELEASE_PROCESS.md)
-- [releases/RELEASE_0.2.1a.md](./releases/RELEASE_0.2.1a.md)
+- [releases/RELEASE_0.2.3.md](./releases/RELEASE_0.2.3.md)
 - [GITHUB_RELEASE_PLAYBOOK.md](./GITHUB_RELEASE_PLAYBOOK.md)
 - [../CHANGELOG.md](../CHANGELOG.md)
 

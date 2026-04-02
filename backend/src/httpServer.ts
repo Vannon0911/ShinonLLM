@@ -145,7 +145,7 @@ async function main(): Promise<void> {
   const chatRoute = createChatRoute({
     sessionMemoryPersistence,
     memoryTtlSeconds,
-    decayAfterWrite: process.env.SHINON_MEMORY_DECAY_AFTER_WRITE === "1",
+    memoryDecayKeepLatest: toPositiveInteger(process.env.SHINON_MEMORY_KEEP_LATEST_PER_CONVERSATION),
   });
   const healthRoute = createHealthRoute({
     backendHealth: () =>

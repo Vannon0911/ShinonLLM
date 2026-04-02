@@ -1,7 +1,7 @@
 # Product Positioning
 
 Stand: 2026-04-02
-Release-Kontext: 0.2.1a
+Release-Kontext: 0.2.3
 
 ## One-Line Positioning
 
@@ -59,3 +59,4 @@ Viele lokale LLM-Setups scheitern nicht an Modellqualitaet, sondern an Systemgre
 1. Laufzeitstabilitaet und Integritaet priorisieren.
 2. Memory-Persistenz und Decay kontrolliert ausbauen.
 3. Release-Prozess als verifizierbare Kette halten.
+

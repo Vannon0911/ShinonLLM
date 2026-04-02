@@ -1,9 +1,12 @@
 {
   "name": "llmrab-runtime",
   "private": true,
-  "version": "0.2.1-a",
+  "version": "0.2.3",
   "type": "module",
   "scripts": {
+    "start:local": "powershell -ExecutionPolicy Bypass -File ./start-local.ps1",
+    "stop:local": "powershell -ExecutionPolicy Bypass -File ./stop-local.ps1",
+    "verify:full": "powershell -ExecutionPolicy Bypass -File ./verify-full.ps1",
     "test:baseline-integrity": "node --import tsx ./tests/gates/baseline-integrity.spec.ts",
     "test:determinism": "node --import tsx ./tests/gates/replay-gate.spec.ts",
     "test:gates": "node --import tsx ./tests/gates/contract-gate.spec.ts && node --import tsx ./tests/gates/replay-gate.spec.ts && node --import tsx ./tests/gates/baseline-integrity.spec.ts",
@@ -15,4 +18,5 @@
     "typescript": "^5.9.3"
   }
 }
+
 

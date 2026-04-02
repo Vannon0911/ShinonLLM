@@ -93,7 +93,7 @@ export type ChatRouteDependencies = {
   memoryContext?: Record<string, unknown>;
   sessionMemoryPersistence?: SessionMemoryPersistence;
   memoryTtlSeconds?: number;
-  decayAfterWrite?: boolean;
+  memoryDecayKeepLatest?: number;
 };
 
 export type ChatRouteHandler = {
@@ -486,9 +486,9 @@ async function executeChatRoute(
           ttlSeconds: dependencies.memoryTtlSeconds,
         },
       ]);
-      if (dependencies.decayAfterWrite === true) {
-        persistence.decay();
-      }
+      persistence.decay({
+        keepLatestPerConversation: dependencies.memoryDecayKeepLatest,
+      });
     }
 
     return buildSuccessResponse(normalized, assistant.text, requestId, assistant.source);

@@ -10,6 +10,30 @@ The format follows Keep a Changelog principles and Semantic Versioning.
 
 - TBD
 
+## [0.2.3] - 2026-04-02
+
+### Added
+
+- Root local runtime control scripts:
+  - `start-local.ps1`
+  - `stop-local.ps1`
+- Repo hygiene artifacts:
+  - `.editorconfig`
+  - `.gitattributes`
+  - `docs/REPO_HYGIENE_0.2.3.md`
+- Release and presentation documents for 0.2.3:
+  - `docs/releases/RELEASE_0.2.3.md`
+  - `docs/MVP_SCOPE_SCAN_0.2.3.md`
+  - `docs/PRAESENTATION_0.2.3.md`
+
+### Changed
+
+- Runtime policy hardened to live execution with mandatory offline evaluator + replay hash evidence.
+- Memory decay handling hardened in write path (no optional runtime skip).
+- Frontend chat UX hardened to avoid blocked input/model selection during in-flight requests and to enforce request timeout behavior.
+- Package versions promoted from `0.2.1-a` to stable `0.2.3` (root/backend/frontend + lockfiles).
+- README and docs index updated for GitHub presentation and current release artifacts.
+
 ## [0.2.1a] - 2026-04-02
 
 ### Added

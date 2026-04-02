@@ -1,7 +1,7 @@
 {
   "name": "frontend-runtime",
   "private": true,
-  "version": "0.2.1-a",
+  "version": "0.2.3",
   "type": "module",
   "main": "./src/app/page.tsx",
   "scripts": {
@@ -22,4 +22,5 @@
     "typescript": "^5.9.3"
   }
 }
+
 

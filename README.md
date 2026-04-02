@@ -1,6 +1,9 @@
 # ShinonLLM
 
-Release: **0.2.1a** (Package-Semantik: `0.2.1-a`)
+Release: **0.2.3** (Package: `0.2.3`)
+
+[![Release](https://img.shields.io/badge/release-0.2.3-1f6feb.svg)](./docs/releases/RELEASE_0.2.3.md)
+[![Verify](https://img.shields.io/badge/verify-backend%20%2B%20frontend-0ea5e9.svg)](./docs/TESTING_AND_BASELINE.md)
 
 ## Consumer-Teil
 
@@ -13,8 +16,8 @@ Der Fokus liegt auf kontrollierbarem Verhalten statt auf Prompt-Zufall.
 ### Warum das relevant ist
 
 1. Mehr Kontrolle
-- Default ist deterministic-offline statt ungeplantem Live-Modus.
-- Live-Inference ist ein expliziter Opt-in.
+- Live-Inference ist Standardpfad, aber durch verpflichtende Offline-Evaluator-Pruefung abgesichert.
+- Runtime-Planning und Evaluator-Evidenz (Replay-Hash) sind feste Bestandteile pro Turn.
 
 2. Mehr Stabilitaet
 - Contract-Gates verhindern ungeregelte Payloads.
@@ -22,7 +25,7 @@ Der Fokus liegt auf kontrollierbarem Verhalten statt auf Prompt-Zufall.
 
 3. Mehr Betriebssicherheit
 - Session-Memory kann persistiert werden (SQLite Opt-in).
-- Decay/TTL vermeidet ungebremstes Memory-Wachstum.
+- Decay ist Pflichtpfad nach jedem Session-Write; TTL wirkt als zusaetzliche Verfallsgrenze.
 
 ### Nutzbeispiele
 
@@ -39,9 +42,9 @@ Der Fokus liegt auf kontrollierbarem Verhalten statt auf Prompt-Zufall.
 
 Technisch bedeutet das:
 - API-Entry validiert und klassifiziert Requests.
-- Orchestrator baut Kontexte und Guardrails.
-- Inference arbeitet mit Fail-closed Default (`live=false`).
-- Memory-Pfade sind explizit (load -> generate -> append -> optional decay).
+- Orchestrator baut Kontexte, Guardrails und einen deterministischen Runtime-Plan.
+- Inference nutzt Live-Execution mit verpflichtendem Offline-Evaluator inkl. Replay-Hash-Evidenz.
+- Memory-Pfade sind explizit (load -> generate -> append -> decay).
 
 ### Zielarchitektur (MVP)
 
@@ -56,14 +59,14 @@ Technisch bedeutet das:
 ### Laufzeitprofile
 
 Inference:
-- Default: deterministic offline
-- Opt-in live: `memoryContext.inferenceLive=true`
+- Default: Live-Execution gegen lokales Backend
+- Pflicht: Offline-Evaluator + Replay-Hash pro Aufruf (auch bei Live-Response)
 
 Persistenz:
 - Default: In-Memory (volatil)
 - SQLite Opt-in: `SHINON_MEMORY_SQLITE_PATH`
 - TTL optional: `SHINON_MEMORY_TTL_SECONDS`
-- Decay optional: `SHINON_MEMORY_DECAY_AFTER_WRITE=1`
+- Decay Pflicht: nach jedem Write, optional konfigurierbare Retention via `SHINON_MEMORY_KEEP_LATEST_PER_CONVERSATION`
 
 ### Vergleich
 
@@ -92,24 +95,44 @@ cd frontend
 npm install
 cd ..
 npm run verify:backend
-cd frontend
-npm run build
-cd ..
+npm --prefix frontend run build
+npm run verify:full
+```
+
+Lokalen Frontend+Backend-Stack direkt starten:
+
+```powershell
+npm run start:local
+```
+
+Bei Port-Konflikten (`EADDRINUSE`) zuerst:
+
+```powershell
+npm run stop:local
 ```
 
 ## Release- und Architektur-Dokumente
 
 - [docs/ZIELARCHITEKTUR_MVP.md](./docs/ZIELARCHITEKTUR_MVP.md)
-- [docs/MVP_SCOPE_SCAN_0.2.1a.md](./docs/MVP_SCOPE_SCAN_0.2.1a.md)
-- [docs/PRAESENTATION_0.2.1a.md](./docs/PRAESENTATION_0.2.1a.md)
+- [docs/MVP_SCOPE_SCAN_0.2.3.md](./docs/MVP_SCOPE_SCAN_0.2.3.md)
+- [docs/PRAESENTATION_0.2.3.md](./docs/PRAESENTATION_0.2.3.md)
+- [docs/GITHUB_PRESENTATION_0.2.3.md](./docs/GITHUB_PRESENTATION_0.2.3.md)
+- [docs/REPO_HYGIENE_0.2.3.md](./docs/REPO_HYGIENE_0.2.3.md)
+- [docs/releases/RELEASE_0.2.3.md](./docs/releases/RELEASE_0.2.3.md)
 - [docs/REQUIREMENTS.md](./docs/REQUIREMENTS.md)
 - [docs/TESTING_AND_BASELINE.md](./docs/TESTING_AND_BASELINE.md)
 - [docs/GITHUB_RELEASE_PLAYBOOK.md](./docs/GITHUB_RELEASE_PLAYBOOK.md)
 - [CHANGELOG.md](./CHANGELOG.md)
+
+## GitHub-Präsentation
+
+- Repo-Story: Runtime-first, Contract-gated, replay-evident.
+- Release-Artefakte: klare `docs/releases/*` Eintraege statt verstreuter Notizen.
+- Hygiene-Basis: [docs/REPO_HYGIENE_0.2.3.md](./docs/REPO_HYGIENE_0.2.3.md)
 
 ## Source of Truth
 
 - [LLM_ENTRY.md](./LLM_ENTRY.md)
 - [docs/LLM_ENTRY_CONFORMITY.md](./docs/LLM_ENTRY_CONFORMITY.md)
 - [docs/ZIELARCHITEKTUR_MVP.md](./docs/ZIELARCHITEKTUR_MVP.md)
-- [docs/MVP_SCOPE_SCAN_0.2.1a.md](./docs/MVP_SCOPE_SCAN_0.2.1a.md)
+- [docs/MVP_SCOPE_SCAN_0.2.3.md](./docs/MVP_SCOPE_SCAN_0.2.3.md)

@@ -1,4 +1,4 @@
-# Zielarchitektur MVP (Release 0.2.1a)
+# Zielarchitektur MVP (Release 0.2.3)
 
 Stand: 2026-04-02
 Quelle: `FELIX_SYSTEM_ARCHITECTURE-1.docx` (MVP-Scope)
@@ -45,7 +45,7 @@ Verantwortung:
 
 Verantwortung:
 - Backend-Auswahl und Fallback
-- `live=false` als sicherer Default (deterministic-offline)
+- Live-Ausfuehrung mit verpflichtendem Offline-Evaluator und Replay-Hash-Evidenz
 - Live nur per Opt-in (`options.live===true`)
 
 ### 3.4 Memory / Persistence
@@ -103,14 +103,14 @@ Verantwortung:
 ## 6. Konfigurationsprofil (MVP)
 
 Inference:
-- Default: offline deterministic (`live=false`)
-- Opt-in live: `memoryContext.inferenceLive=true`
+- Default: Live-Ausfuehrung gegen lokales Backend
+- `routeDecision.options.live=false` ist unzulaessig (Contract-Verletzung)
 
 Memory:
 - Default: In-Memory volatil
 - SQLite Opt-in: `SHINON_MEMORY_SQLITE_PATH`
 - TTL global optional: `SHINON_MEMORY_TTL_SECONDS`
-- Decay nach Write optional: `SHINON_MEMORY_DECAY_AFTER_WRITE=1`
+- Decay nach Write ist verpflichtend; optionale Retention ueber `SHINON_MEMORY_KEEP_LATEST_PER_CONVERSATION`
 
 ## 7. MVP Scope vs. spaeter
 
@@ -126,9 +126,12 @@ Memory:
 - Erweiterte E2E-Browser-Automation im Standard-Verify
 - CI-Policy-Enforcement fuer alle Release-Gates
 
-## 8. Definition of Done fuer 0.2.1a Basis
+## 8. Definition of Done fuer 0.2.3 Basis
 
 1. Architektur und Scope sind zentral dokumentiert.
-2. Release-/Version-Regeln fuer `0.2.1a` sind eindeutig.
+2. Release-/Version-Regeln fuer `0.2.3` sind eindeutig.
 3. Repo-Scan (Gap-Analyse) ist dokumentiert und priorisiert.
 4. README/Docs spiegeln den realen Runtime- und Persistenzstand.
+
+
+

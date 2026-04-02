@@ -35,14 +35,16 @@ cd ..
 ## Runtime-Profile (wichtig)
 
 Inference:
-- Default: deterministic offline (`live=false`)
-- Live nur per explizitem Opt-in: `memoryContext.inferenceLive=true`
+- Default: Live-Execution gegen lokales Backend
+- Pflicht: Offline-Evaluator + Replay-Hash pro Aufruf
+- `routeDecision.options.live=false` ist unzulaessig (Contract-Verletzung)
 
 Session-Memory Persistenz:
 - Default: In-Memory (volatil)
 - SQLite Opt-in ueber `SHINON_MEMORY_SQLITE_PATH`
 - optionale TTL pro Eintrag: `SHINON_MEMORY_TTL_SECONDS`
-- optionales Decay nach jedem Write: `SHINON_MEMORY_DECAY_AFTER_WRITE=1`
+- verpflichtendes Decay nach jedem Write
+- optionale Retention pro Conversation: `SHINON_MEMORY_KEEP_LATEST_PER_CONVERSATION`
 
 ## Hinweise
 

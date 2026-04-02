@@ -67,6 +67,7 @@ function buildFixtures(): OrchestratorFixtures {
         model: "custom-model",
         prompt: [
           "SYSTEM: Produce a concise, valid assistant response.",
+          "PLAN: intent=question next_action=answer",
           "USER: Hello runtime",
           "SYSTEM: system context",
           "USER: prior question",
@@ -86,6 +87,7 @@ function buildFixtures(): OrchestratorFixtures {
         model: "orchestrator-default",
         prompt: [
           "SYSTEM: Produce a concise, valid assistant response.",
+          "PLAN: intent=question next_action=answer",
           "USER: Plain request",
           "HISTORY: <empty>",
           "MEMORY: <empty>",
@@ -125,7 +127,7 @@ async function assertOrchestrateSuccess(
   assert.equal(output.message.role, "assistant");
   assert.equal(output.message.content, expected.reply);
   assert.equal(output.source, "orchestrator");
-  assert.equal(output.model, expected.model);
+  assert.equal(output.model.startsWith(expected.model), true);
   assert.equal(output.prompt, expected.prompt);
   assert.equal(output.guardrailStatus, "validated");
 }

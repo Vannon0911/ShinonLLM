@@ -1,3 +1,5 @@
+import { sha256Hex } from "../../../shared/src/utils/hash.js";
+import { stableJson } from "../../../shared/src/utils/stableJson.js";
 import { callLlamaCpp } from "../adapters/llamacppAdapter.js";
 import { callOllama } from "../adapters/ollamaAdapter.js";
 
@@ -68,12 +70,15 @@ export type ClassifiedBackendError = Readonly<{
   details?: Readonly<Record<string, unknown>>;
 }>;
 
-type BackendRouteInput =
-  | Readonly<{
-      routeDecision: BackendRouteDecision;
-      promptPayload: PromptPayload;
-    }>
-  | Readonly<[BackendRouteDecision, PromptPayload]>;
+type OfflineEvaluation = Readonly<{
+  mode: "offline-evaluator";
+  planner: Readonly<{
+    intent: "question" | "analysis" | "code" | "summary";
+    nextAction: "answer" | "explain" | "propose_patch" | "summarize";
+    confidence: number;
+  }>;
+  replayHash: string;
+}>;
 
 function isPlainObject(value: unknown): value is PlainObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -141,6 +146,10 @@ function normalizeRouteDecision(candidate: unknown): BackendRouteDecision {
 
   if (!isNonEmptyString(candidate.model)) {
     failClosed("BACKEND_ROUTE_INVALID", "route decision.model must be a non-empty string");
+  }
+
+  if (candidate.options?.live === false) {
+    failClosed("BACKEND_ROUTE_INVALID", "route decision.options.live=false is not allowed");
   }
 
   const fallbackBackend = candidate.fallbackBackend === undefined
@@ -259,46 +268,80 @@ function resolveInvocation(
   });
 }
 
-async function routeThroughBackend(
-  decision: BackendRouteDecision,
-  promptPayload: PromptPayload,
-): Promise<NormalizedModelResponse> {
-  const promptText = promptPayload.prompt?.trim()
+function toPromptText(promptPayload: PromptPayload): string {
+  return promptPayload.prompt?.trim()
     || promptPayload.userText?.trim()
     || (promptPayload.messages && promptPayload.messages.length > 0
       ? promptPayload.messages.map((message) => `${message.role.toUpperCase()}: ${message.content}`).join("\n")
       : "");
+}
 
+function inferRuntimePlan(text: string): OfflineEvaluation["planner"] {
+  const lower = text.toLowerCase();
+  if (/(code|bug|error|typescript|javascript|python|sql|patch)/u.test(lower)) {
+    return Object.freeze({ intent: "code", nextAction: "propose_patch", confidence: 0.86 });
+  }
+  if (/(summarize|summary|zusammenfass|tl;dr|tldr)/u.test(lower)) {
+    return Object.freeze({ intent: "summary", nextAction: "summarize", confidence: 0.84 });
+  }
+  if (/(analy|compare|bewert|audit|review)/u.test(lower)) {
+    return Object.freeze({ intent: "analysis", nextAction: "explain", confidence: 0.81 });
+  }
+  return Object.freeze({ intent: "question", nextAction: "answer", confidence: 0.73 });
+}
+
+function buildReplayHash(input: {
+  routeDecision: BackendRouteDecision;
+  promptPayload: PromptPayload;
+  mode: string;
+  backend: BackendName;
+  content: string;
+}): string {
+  return sha256Hex(
+    stableJson({
+      routeDecision: input.routeDecision,
+      promptPayload: input.promptPayload,
+      mode: input.mode,
+      backend: input.backend,
+      content: input.content,
+    }),
+  );
+}
+
+function evaluateOffline(
+  routeDecision: BackendRouteDecision,
+  promptPayload: PromptPayload,
+  backend: BackendName,
+  content: string,
+): OfflineEvaluation {
+  const planner = inferRuntimePlan(content);
+  const replayHash = buildReplayHash({
+    routeDecision,
+    promptPayload,
+    mode: "offline-evaluator",
+    backend,
+    content,
+  });
+  return Object.freeze({
+    mode: "offline-evaluator",
+    planner,
+    replayHash,
+  });
+}
+
+async function callLiveBackend(
+  decision: BackendRouteDecision,
+  promptPayload: PromptPayload,
+): Promise<NormalizedModelResponse> {
+  const promptText = toPromptText(promptPayload);
   const requestId = promptPayload.requestId ?? decision.requestId;
   const sessionId = promptPayload.sessionId ?? decision.sessionId;
   const conversationId = promptPayload.conversationId ?? decision.conversationId;
-  const model = decision.model.trim();
   const streamed = decision.stream !== false;
-  const useLiveBackend = decision.options?.live === true;
-
-  if (!useLiveBackend) {
-    return Object.freeze({
-      backend: decision.backend,
-      model,
-      content: promptText,
-      message: Object.freeze({
-        role: "assistant",
-        content: promptText,
-      }),
-      streamed,
-      ...(requestId ? { requestId } : {}),
-      ...(sessionId ? { sessionId } : {}),
-      ...(conversationId ? { conversationId } : {}),
-      raw: Object.freeze({
-        routeDecision: decision,
-        promptPayload,
-        mode: "deterministic-offline",
-      }),
-    });
-  }
 
   if (decision.backend === "ollama") {
     const result = await callOllama(decision, promptPayload);
+    const offlineEvaluation = evaluateOffline(decision, promptPayload, "ollama", result.content);
     return Object.freeze({
       backend: "ollama",
       model: result.model,
@@ -311,7 +354,11 @@ async function routeThroughBackend(
       ...(result.requestId ? { requestId: result.requestId } : {}),
       ...(result.sessionId ? { sessionId: result.sessionId } : {}),
       ...(result.conversationId ? { conversationId: result.conversationId } : {}),
-      raw: result.raw,
+      raw: Object.freeze({
+        mode: "live",
+        evaluator: offlineEvaluation,
+        adapter: result.raw,
+      }),
     });
   }
 
@@ -324,6 +371,7 @@ async function routeThroughBackend(
         prompt?: string;
       },
     });
+    const offlineEvaluation = evaluateOffline(decision, promptPayload, "llamacpp", result.reply);
     return Object.freeze({
       backend: "llamacpp",
       model: result.model,
@@ -337,8 +385,8 @@ async function routeThroughBackend(
       ...(sessionId ? { sessionId } : {}),
       ...(conversationId ? { conversationId } : {}),
       raw: Object.freeze({
-        routeDecision: decision,
-        promptPayload,
+        mode: "live",
+        evaluator: offlineEvaluation,
         adapter: result.raw,
       }),
     });
@@ -349,54 +397,95 @@ async function routeThroughBackend(
   });
 }
 
+function buildOfflineFallback(
+  decision: BackendRouteDecision,
+  promptPayload: PromptPayload,
+  reason: Readonly<Record<string, unknown>>,
+): NormalizedModelResponse {
+  const content = toPromptText(promptPayload);
+  const requestId = promptPayload.requestId ?? decision.requestId;
+  const sessionId = promptPayload.sessionId ?? decision.sessionId;
+  const conversationId = promptPayload.conversationId ?? decision.conversationId;
+  const streamed = decision.stream !== false;
+  const evaluator = evaluateOffline(decision, promptPayload, decision.backend, content);
+
+  return Object.freeze({
+    backend: decision.backend,
+    model: `${decision.model}-offline-eval`,
+    content,
+    message: Object.freeze({
+      role: "assistant",
+      content,
+    }),
+    streamed,
+    ...(requestId ? { requestId } : {}),
+    ...(sessionId ? { sessionId } : {}),
+    ...(conversationId ? { conversationId } : {}),
+    raw: Object.freeze({
+      mode: "offline-evaluator",
+      evaluator,
+      reason,
+      routeDecision: decision,
+      promptPayload,
+    }),
+  });
+}
+
 export async function routeBackendCall(
   routeDecisionOrInput: unknown,
   promptPayload?: unknown,
 ): Promise<NormalizedModelResponse> {
+  const normalized = resolveInvocation(routeDecisionOrInput, promptPayload);
   try {
-    const normalized = resolveInvocation(routeDecisionOrInput, promptPayload);
-    return await routeThroughBackend(normalized.routeDecision, normalized.promptPayload);
+    return await callLiveBackend(normalized.routeDecision, normalized.promptPayload);
   } catch (error) {
     if (isPlainObject(error) && error.ok === false && typeof error.code === "string" && typeof error.message === "string") {
       const routeError = error as ClassifiedBackendError;
-      const decision = isPlainObject(routeDecisionOrInput) && "routeDecision" in routeDecisionOrInput
-        ? normalizeRouteDecision(routeDecisionOrInput.routeDecision)
-        : Array.isArray(routeDecisionOrInput) && routeDecisionOrInput.length === 2
-          ? normalizeRouteDecision(routeDecisionOrInput[0])
-          : isPlainObject(routeDecisionOrInput)
-            ? normalizeRouteDecision(routeDecisionOrInput)
-            : undefined;
+      if (routeError.code === "BACKEND_ROUTE_INVALID" || routeError.code === "BACKEND_PROMPT_INVALID") {
+        throw routeError;
+      }
 
       if (
-        decision &&
-        decision.allowFallback === true &&
-        decision.fallbackBackend &&
-        decision.fallbackBackend !== decision.backend &&
-        routeError.code !== "BACKEND_ROUTE_INVALID" &&
-        routeError.code !== "BACKEND_PROMPT_INVALID"
+        normalized.routeDecision.allowFallback === true &&
+        normalized.routeDecision.fallbackBackend &&
+        normalized.routeDecision.fallbackBackend !== normalized.routeDecision.backend
       ) {
         try {
-          const normalized = resolveInvocation(routeDecisionOrInput, promptPayload);
           const fallbackDecision = Object.freeze({
             ...normalized.routeDecision,
-            backend: decision.fallbackBackend,
+            backend: normalized.routeDecision.fallbackBackend,
           }) as BackendRouteDecision;
-          return await routeThroughBackend(fallbackDecision, normalized.promptPayload);
+          return await callLiveBackend(fallbackDecision, normalized.promptPayload);
         } catch (fallbackError) {
-          if (isPlainObject(fallbackError) && fallbackError.ok === false && typeof fallbackError.code === "string" && typeof fallbackError.message === "string") {
-            throw fallbackError;
-          }
-          throw classifyBackendError(
-            "BACKEND_FALLBACK_FAILED",
-            "backend fallback failed",
-            { primaryBackend: decision.backend, fallbackBackend: decision.fallbackBackend },
+          const fallbackReason = isPlainObject(fallbackError)
+            ? fallbackError
+            : { code: "BACKEND_FALLBACK_FAILED", message: "backend fallback failed" };
+          return buildOfflineFallback(
+            normalized.routeDecision,
+            normalized.promptPayload,
+            Object.freeze({
+              primaryError: routeError,
+              fallbackError: fallbackReason,
+            }),
           );
         }
       }
 
-      throw routeError;
+      return buildOfflineFallback(
+        normalized.routeDecision,
+        normalized.promptPayload,
+        Object.freeze({
+          primaryError: routeError,
+        }),
+      );
     }
 
-    throw classifyBackendError("BACKEND_INTERNAL_ERROR", "backend routing failed");
+    return buildOfflineFallback(
+      normalized.routeDecision,
+      normalized.promptPayload,
+      Object.freeze({
+        primaryError: classifyBackendError("BACKEND_INTERNAL_ERROR", "backend routing failed"),
+      }),
+    );
   }
 }

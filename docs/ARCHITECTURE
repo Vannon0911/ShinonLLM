@@ -4,7 +4,8 @@ Diese Datei bleibt aus Kompatibilitaetsgruenden bestehen.
 
 Die aktuelle Zielarchitektur liegt in:
 - `docs/ZIELARCHITEKTUR_MVP.md`
-- `docs/MVP_SCOPE_SCAN_0.2.1a.md`
+- `docs/MVP_SCOPE_SCAN_0.2.3.md`
 
 Release-Basis:
-- 0.2.1a (Package-Semantik: 0.2.1-a)
+- 0.2.3 (Package-Version: 0.2.3)
+

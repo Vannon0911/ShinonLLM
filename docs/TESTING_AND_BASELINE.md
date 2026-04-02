@@ -26,6 +26,7 @@ Diese Seite definiert den verbindlichen Testpfad fuer ShinonLLM mit fail-closed 
 npm run test:baseline-integrity
 npm run test:gates
 npm run verify:backend
+npm run verify:full
 cd frontend
 npm run build
 ```

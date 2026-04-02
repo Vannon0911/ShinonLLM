@@ -127,15 +127,29 @@ function buildRequestPayload(
 
 async function sendChatRequest(
   payload: ChatRequestPayload,
-  apiBasePath: string
+  apiBasePath: string,
+  timeoutMs = 15_000
 ): Promise<ChatResponsePayload> {
-  const response = await fetch(apiBasePath, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  let response: Response;
+  try {
+    response = await fetch(apiBasePath, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error(`Chat request timed out after ${timeoutMs}ms`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
 
   const data: unknown = await response.json().catch(() => null);
 
@@ -303,7 +317,6 @@ export function ChatShell({
         content: normalizedText,
       },
     ]);
-    setDraft("");
 
     try {
       const response = await sendChatRequest(payload, apiBasePath);
@@ -314,6 +327,7 @@ export function ChatShell({
       };
 
       setMessages((current) => [...current, assistantMessage]);
+      setDraft("");
       emit({
         type: "success",
         payload: {
@@ -358,7 +372,7 @@ export function ChatShell({
       <Composer
         model={model}
         onModelChange={setModel}
-        disableInput={isSending}
+        disableInput={false}
         disableSubmit={!canSend}
         onChange={setDraft}
         onSubmit={() => {
