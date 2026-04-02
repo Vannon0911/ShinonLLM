@@ -1,14 +1,26 @@
-﻿# Changelog
+# Changelog
 
 All notable changes to this project will be documented in this file.
 
-The format follows Keep a Changelog principles and Semantic Versioning.
+The format follows Keep a Changelog and this project adheres to Semantic Versioning.
 
 ## [Unreleased]
 
 ### Added
 
-- TBD
+- `docs/HANDSHAKE_CURRENT_STATE.md` as the consolidated single current-state handshake document.
+
+### Changed
+
+- `README.md` aligned to a runtime-first, single-truth documentation model.
+- `docs/README.md` reduced to canonical docs and support references only.
+- `docs/TODO.md` rewritten as the single prioritized backlog.
+- Release governance docs (`docs/releases/VERSIONING.md`, `docs/releases/RELEASE_PROCESS.md`) aligned with the consolidated docs structure.
+
+### Removed
+
+- Legacy split documentation and presentation artifacts superseded by canonical docs in `docs/`.
+- Per-directory `report.md` files removed project-wide to prevent conflicting documentation narratives.
 
 ## [0.2.3] - 2026-04-02
 
@@ -28,7 +40,7 @@ The format follows Keep a Changelog principles and Semantic Versioning.
 
 ### Changed
 
-- Runtime policy hardened to live execution with mandatory offline evaluator + replay hash evidence.
+- Runtime policy hardened to live execution with mandatory offline evaluator and replay hash evidence.
 - Memory decay handling hardened in write path (no optional runtime skip).
 - Frontend chat UX hardened to avoid blocked input/model selection during in-flight requests and to enforce request timeout behavior.
 - Package versions promoted from `0.2.1-a` to stable `0.2.3` (root/backend/frontend + lockfiles).
@@ -72,3 +84,4 @@ The format follows Keep a Changelog principles and Semantic Versioning.
 ### Added
 
 - Initial runtime contracts, gate checks, and architecture baseline.
+

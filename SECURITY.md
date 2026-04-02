@@ -2,24 +2,25 @@
 
 ## Supported Versions
 
-Security fixes are currently provided for the latest minor release line.
+Security fixes werden fuer die jeweils aktuelle Minor-Linie priorisiert.
 
-## Reporting a Vulnerability
+## Vulnerability Reporting
 
-Please do not open public issues for security reports.
+Bitte keine oeffentlichen Issues fuer Sicherheitsluecken erstellen.
 
-Report privately with:
+Melde privat mit folgenden Angaben:
 
-- Clear summary of the vulnerability.
-- Affected components and paths.
-- Reproduction steps or proof of concept.
-- Impact assessment.
-- Suggested mitigation (optional).
+- kurze Beschreibung der Schwachstelle
+- betroffene Pfade/Komponenten
+- reproduzierbare Schritte oder PoC
+- erwartete Auswirkungen
+- optionale Mitigationsidee
 
-Until a dedicated security contact is published, use repository maintainers through private channel and reference this policy in your message.
+Bis ein dedizierter Security-Kontakt veroeffentlicht ist, nutze den privaten Maintainer-Kanal und verweise auf diese Policy.
 
-## Response Targets
+## Zielzeiten
 
-- Initial acknowledgment: within 5 business days.
-- Triage decision: within 10 business days.
-- Fix timeline: based on severity and exploitability.
+- Erstbestaetigung: innerhalb von 5 Werktagen
+- Triage-Entscheidung: innerhalb von 10 Werktagen
+- Fix-Zeitrahmen: abhaengig von Schweregrad und Exploitability
+

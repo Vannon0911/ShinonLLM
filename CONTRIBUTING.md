@@ -1,31 +1,32 @@
 # Contributing
 
-Thank you for contributing to ShinonLLM.
+Danke fuer deinen Beitrag zu ShinonLLM.
 
-## Contribution Principles
+## Leitprinzipien
 
-- Preserve runtime-first architecture boundaries.
-- Keep changes deterministic and contract-aware.
-- Prefer small, reviewable pull requests.
+- Runtime-first bleibt unverhandelbar: zentrale Entscheidungen gehoeren in Code, nicht in Prompt-Improvisation.
+- Aenderungen muessen reproduzierbar pruefbar sein.
+- Kleine, klar abgegrenzte Pull Requests sind Standard.
 
-## Development Steps
+## Setup und Pflichtchecks
 
-1. Install dependencies:
+1. Abhaengigkeiten installieren:
    - `npm install`
-   - `cd frontend && npm install`
-2. Run required checks:
+   - `npm --prefix frontend install`
+2. Verifikation ausfuehren:
    - `npm run verify:backend`
-   - `cd frontend && npm run build`
-3. Update documentation and `CHANGELOG.md` when behavior changes.
+   - `npm --prefix frontend run build`
+3. Bei Verhaltensaenderungen `CHANGELOG.md` unter `[Unreleased]` aktualisieren.
 
-## Pull Request Requirements
+## Pull Request Anforderungen
 
-- Clear problem statement and scope.
-- Tests or gate coverage for behavior changes.
-- Notes on runtime contract impact.
-- Changelog entry under `[Unreleased]`.
+- Klarer Scope und Nutzerwirkung.
+- Hinweise auf Contract-/Runtime-Auswirkung.
+- Doku-Updates bei geaendertem Verhalten.
+- Release-Einordnung (Patch/Minor/Major).
 
-## Source of Truth Reminder
+## Source-of-Truth Hinweis
 
-`README.md` is presentation-focused.
-Authoritative operational rules live in `LLM_ENTRY.md` and related conformity docs.
+`README.md` dient der Produktpraesentation.
+Autoritative technische Regeln liegen in `LLM_ENTRY.md`, `docs/LLM_ENTRY_CONFORMITY.md` und `docs/HANDSHAKE_CURRENT_STATE.md`.
+

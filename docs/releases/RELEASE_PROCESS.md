@@ -1,27 +1,34 @@
 # Release Process
 
-This document defines the release checklist for ShinonLLM.
+Dieses Dokument definiert den standardisierten Release-Ablauf fuer ShinonLLM.
 
-## Release Checklist
+## Release-Checkliste
 
-1. Confirm scope and version bump according to [VERSIONING.md](./VERSIONING.md).
-2. Run runtime validation:
+1. Version festlegen gemaess [VERSIONING.md](./VERSIONING.md).
+2. `CHANGELOG.md` aktualisieren und `[Unreleased]` in neue Version ueberfuehren.
+3. Runtime und Qualitaets-Gates ausfuehren:
    - `npm run verify:backend`
-   - `cd frontend && npm run build`
-3. Update `CHANGELOG.md` under `[Unreleased]` and move entries to the new version section.
-4. Ensure `README.md` and `docs/README.md` reflect current product status.
-5. Create and push tag `vMAJOR.MINOR.PATCH`.
-6. Verify GitHub Actions `CI` and `Release` workflows are green.
-7. Publish GitHub Release notes and link to key docs.
+   - `npm --prefix frontend run build`
+4. Produktdoku und Einstieg pruefen:
+   - `README.md`
+   - `docs/README.md`
+   - `docs/HANDSHAKE_CURRENT_STATE.md`
+   - `docs/TODO.md`
+5. Pull Request finalisieren und CI-Status sicherstellen.
+6. Tag erstellen: `vMAJOR.MINOR.PATCH`.
+7. Tag pushen und automatischen GitHub Release pruefen.
+8. Release Notes, Risiken und ggf. Follow-up Tickets dokumentieren.
 
-## Release Notes Template
+## Release Notes Struktur
 
-- Summary: one paragraph with user-facing outcome.
-- Added: new features and runtime capabilities.
-- Changed: behavior updates and non-breaking changes.
-- Fixed: bug fixes and gate/reliability corrections.
-- Breaking: contract or behavior changes that require migration.
+- Summary: Nutzerwirkung in 2-4 Saetzen.
+- Added: neue Faehigkeiten.
+- Changed: Verhalten oder Architektur ohne Break.
+- Fixed: Fehlerbehebungen.
+- Breaking: Migrationsrelevante Aenderungen.
 
-## Rollback Rule
+## Rollback/Hotfix Regel
 
-If CI gates fail after tagging, publish a corrective patch release and document root cause in `CHANGELOG.md`.
+- Fehlgeschlagene oder fehlerhafte Releases werden nicht ueberschrieben.
+- Korrektur erfolgt ueber neuen Patch-Release und Changelog-Eintrag mit Root-Cause-Hinweis.
+

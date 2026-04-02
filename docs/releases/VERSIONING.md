@@ -1,26 +1,26 @@
 # Versioning Policy
 
-ShinonLLM uses Semantic Versioning (`MAJOR.MINOR.PATCH`) for package metadata.
+ShinonLLM nutzt Semantic Versioning nach `MAJOR.MINOR.PATCH`.
 
-## SemVer Rules
+## SemVer Regeln
 
-- `MAJOR`: breaking runtime contract or API behavior.
-- `MINOR`: backward-compatible feature additions.
-- `PATCH`: backward-compatible fixes, docs corrections, or operational fixes.
+- `MAJOR`: Breaking Change an Runtime-Verhalten, oeffentlichem API-Vertrag oder Persistenz-Semantik.
+- `MINOR`: Rueckwaertskompatible Features oder neue produktrelevante Faehigkeiten.
+- `PATCH`: Rueckwaertskompatible Fehlerbehebungen, Stabilitaetsverbesserungen, Doku-/Ops-Korrekturen.
 
-## Tag Format
+## Tagging und Releases
 
-- Stable release tags must follow: `vMAJOR.MINOR.PATCH` (example: `v0.2.0`).
-- Optional prerelease tags can follow SemVer prerelease syntax (example: `v0.3.0-rc.1`).
+- Git-Tag-Format: `vMAJOR.MINOR.PATCH` (Beispiel: `v0.3.0`).
+- Ein Tag im gueltigen Format triggert den GitHub-Release-Workflow.
+- Release Notes werden aus dem passenden Abschnitt in `CHANGELOG.md` erzeugt.
 
-## Release Name Alias
+## Version-Bump Entscheidung
 
-- For communication/readme text, a compact alias may be used (example: `0.2.3`).
-- For npm/package metadata, the semver-compatible form is required (example: `0.2.3-rc.1`).
+- API- oder Contract-Break: immer MAJOR.
+- Neues Verhalten ohne Break: MINOR.
+- Fix ohne neue Faehigkeit: PATCH.
 
-## Compatibility Notes
+## Verbindliche Regel
 
-- Public API and contract behavior are validated by gates under `tests/gates`.
-- Any incompatible change to contract behavior requires a MAJOR version bump.
-- If behavior changes but contracts remain compatible, use MINOR or PATCH based on scope.
+Wenn unklar ist, ob ein Break vorliegt, wird konservativ als Breaking eingeordnet und MAJOR gewaehlt.
 

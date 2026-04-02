@@ -39,7 +39,27 @@ jobs:
         run: npm run build
         working-directory: frontend
 
+      - name: Extract release notes from changelog
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          awk -v ver="$VERSION" '
+            $0 ~ "^## \\[" ver "\\]" { capture=1; next }
+            capture && $0 ~ "^## \\[" { capture=0 }
+            capture { print }
+          ' CHANGELOG.md > RELEASE_NOTES.md
+
+          if [ ! -s RELEASE_NOTES.md ]; then
+            {
+              echo "Release ${GITHUB_REF_NAME}"
+              echo
+              echo "No dedicated changelog section found for version ${VERSION}."
+            } > RELEASE_NOTES.md
+          fi
+
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          generate_release_notes: true
+          body_path: RELEASE_NOTES.md
+
