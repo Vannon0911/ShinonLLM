@@ -85,8 +85,12 @@ jobs:
           awk -v ver="$VERSION" '
             $0 ~ "^## \\[" ver "\\]" { capture=1; next }
             capture && $0 ~ "^## \\[" { capture=0 }
-            capture { print }
           ' CHANGELOG.md > RELEASE_NOTES.md
+
+          if [ ! -s RELEASE_NOTES.md ]; then
+            echo "::error::CHANGELOG.md section for version ${VERSION} exists but has no content."
+            exit 1
+          fi
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
