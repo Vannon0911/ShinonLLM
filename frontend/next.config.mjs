@@ -37,7 +37,7 @@ function buildSecurityHeaders(backendOrigin) {
         "frame-ancestors 'none'",
         "form-action 'self'",
         "img-src 'self' data: blob:",
-        "script-src 'self' 'unsafe-inline'",
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
         "style-src 'self' 'unsafe-inline'",
         `connect-src ${connectSources.join(" ")}`,
       ].join("; "),

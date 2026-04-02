@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
+import { Orb, OrbMood } from "./Orb";
 
 type ChatRole = "user" | "assistant";
 type ChatModel = "runtime-default" | "llamacpp-qwen-0_5b" | "ollama-default";
@@ -270,6 +271,23 @@ export function ChatShell({
   const [model, setModel] = useState<ChatModel>("runtime-default");
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<ChatUIError | null>(null);
+  const [currentMood, setCurrentMood] = useState<OrbMood>("neutral");
+
+  // Sehr simpler Live-Sentiment-Check auf dem Draft, damit der Orb sofort reagiert
+  useEffect(() => {
+    const text = draft.toLowerCase();
+    if (/(fuck|scheiß|verdammt|idiot|digga|rotze|garbage|shit)/u.test(text)) {
+      setCurrentMood("aggressive");
+    } else if (/(schnell|now|sofort|asap|hurry|beeil)/u.test(text)) {
+      setCurrentMood("impatient");
+    } else if (/(haha|lol|lmao|geil|nice|cool|\^\^|:d)/u.test(text)) {
+      setCurrentMood("cheerful");
+    } else if (/(glaubst du|denkst du|warum|wieso|philosoph|sinn)/u.test(text)) {
+      setCurrentMood("thoughtful");
+    } else if (draft.length === 0) {
+      setCurrentMood("neutral");
+    }
+  }, [draft]);
 
   const canSend = useMemo(() => normalizeText(draft).length > 0 && !isSending, [draft, isSending]);
 
@@ -367,9 +385,11 @@ export function ChatShell({
   return (
     <section className="chat-shell" aria-busy={isSending}>
       <header className="chat-shell__header">
-        <h2>Chat</h2>
-        <p>{isSending ? "Sending..." : "Ready."}</p>
+        <h2>Chat mit Shinon</h2>
+        <p>{isSending ? "Denkt nach..." : "Bereit."}</p>
       </header>
+      
+      <Orb isThinking={isSending} mood={currentMood} />
 
       {error ? (
         <div aria-live="polite" className="chat-shell__error" role="alert">
