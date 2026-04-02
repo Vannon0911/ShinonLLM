@@ -1,76 +1,85 @@
 # ShinonLLM
 
-Release: **0.2.3** (Package `0.2.3`)
+**Vision:** The runtime thinks. The LLM formulates text.
 
-## Elevator Pitch
+Release: **0.2.3** (root/backend/frontend packages: `0.2.3`)
 
-ShinonLLM is a runtime-first local LLM system.
-The core rule is simple: **the runtime thinks, the LLM formulates text.**
+![ShinonLLM Runtime Overview](./docs/assets/runtime-overview.svg)
 
-This repository presents a controlled architecture where scoring, memory policy, and write decisions are deterministic runtime responsibilities, not prompt improvisation.
+## What It Is
 
-## Why This Project Exists
+ShinonLLM is a runtime-first, local-first LLM system where **the runtime owns decisions** (contracts, routing, memory writes, scoring) and the **model is constrained to text formulation**.
+The outcome is a system that behaves like a product runtime, not like an improvised prompt stack.
 
-Most chat systems drift when context grows:
-- memory becomes noisy chat history
-- model decisions become hard to audit
-- behavior is difficult to reproduce
+## Goals
 
-ShinonLLM addresses this with a strict runtime layer that gates context, validates flow, and keeps a deterministic verification path.
+- Deterministic behavior that can be verified (and blocked) by gates.
+- Explicit memory lifecycle (typed entries, scoring, decay) instead of raw chat logs.
+- Auditable change surfaces (contracts, replay, baseline integrity) that keep releases reproducible.
 
-## Product Direction
+## Who It Is For
 
-ShinonLLM targets a local-first assistant runtime with:
-- deterministic orchestration
-- explicit memory lifecycle
-- controlled inference routing
-- evidence-backed verification gates
+- Builders who want a local-first assistant runtime with predictable behavior.
+- Teams who need contracts, replayability, and "release gates" instead of prompt folklore.
+- Anyone who treats memory writes as a controlled interface, not as a vibe.
 
-The project is positioned as a runtime platform, not a prompt collection.
+## Non-goals
 
-## What Makes It Different
+- A "prompt collection" repo.
+- An agent that can silently mutate state because the prompt felt like it.
+- A hosted SaaS product (this repo is local-first by default).
 
-1. Runtime-owned decisions  
-Policy, scoring, memory writes, and gates are owned by code, not by the model.
+## Unique Selling Points (USPs)
 
-2. Determinism as a release condition  
-Contract, replay, and baseline checks are part of the release handshake.
+- **Runtime-owned decisions:** policy, scoring, memory writes, and gates are enforced in code (fail-closed), not in model prose.
+- **Contract-first orchestration:** schema validation is part of the runtime pipeline, not an afterthought.
+- **Determinism as a release condition:** replay/contract/baseline gates are treated as release handshakes, not optional tests.
+- **Frontend as delivery surface:** UI delivers interaction; it does not own decision logic.
 
-3. Frontend as delivery surface  
-UI delivers interaction. It does not own decision logic.
+## ShinonLLM vs Typical Companion Stacks
 
-4. Consolidated documentation model  
-One maintained current-state handshake plus canonical docs.
+| Dimension | ShinonLLM | Typical companion stacks |
+|---|---|---|
+| Who "decides" | Runtime code decides; model formats text | Model/prompt decides (often implicitly) |
+| Memory | Typed, scored entries with explicit write-gates | Chat logs + ad-hoc summaries |
+| Determinism | Replay/contract/baseline gates are first-class | Best-effort, hard to reproduce |
+| Auditability | Contracts + verification artifacts | "Seems fine" until it drifts |
+| Failure mode | Fail-closed on invalid writes / schema breaks | Silent drift, hidden state mutation |
+| Product surface | Frontend is delivery only | UI + agent logic often mixed |
+| Releases | SemVer + changelog + tag-driven GitHub releases | Ad-hoc versioning (or none) |
 
-## High-Level System View
+## How It Works (High Level)
 
-Flow ownership:
-- `backend` -> request entry and validation
-- `orchestrator` -> contract-first runtime flow
-- `inference` -> routing with evaluator evidence
-- `memory` -> session handling and decay
-- `tests/gates` -> determinism and baseline checks
+Request path (synchronous, user-visible):
 
-![Runtime Overview](./docs/assets/runtime-overview.svg)
+- `User -> frontend -> backend -> orchestrator -> inference -> backend -> frontend -> User`
+
+State path (runtime-internal, controlled writes):
+
+- `orchestrator/inference -> memory` for session updates and decay handling.
+
+Quality path (verification, not in hot response path):
+
+- `tests/gates` validate determinism and baseline integrity before releases.
 
 ## Current State (0.2.3)
 
 - Runtime entry and validation are active.
 - Contract-first orchestration is active.
-- Inference routing includes mandatory offline evaluator evidence on live path.
+- Inference routing includes mandatory offline evaluator evidence in the live path.
 - Session memory path with decay exists.
-- Consolidation cleanup completed (legacy split reports removed).
 
 Current verified handshake:
+
 - [docs/HANDSHAKE_CURRENT_STATE.md](./docs/HANDSHAKE_CURRENT_STATE.md)
 
-## Verification Baseline
+## Quickstart (Local Verification Baseline)
 
 Mandatory local checks:
 
 ```powershell
-npm install
-npm --prefix frontend install
+npm ci
+npm --prefix frontend ci
 npm run test:determinism
 npm run verify:backend
 npm --prefix frontend run build
@@ -99,38 +108,29 @@ npm run stop:local
 - `tests/` - unit, integration, e2e, and gate checks
 - `docs/` - canonical project documentation
 
-## Roadmap Snapshot
+## Documentation
 
-Near-term priorities are tracked in:
-- [docs/TODO.md](./docs/TODO.md)
+Start here:
 
-Current focus:
-- self-contained gate scripts
-- memory policy alignment in one canonical place
-- stronger local artifact cleanup automation
-- CI-visible verification confidence
+- [docs/README.md](./docs/README.md)
 
-## Documentation Model
-
-Documentation was hardened and consolidated.
-Use these canonical documents:
+Core documents:
 
 - [docs/HANDSHAKE_CURRENT_STATE.md](./docs/HANDSHAKE_CURRENT_STATE.md)
+- [docs/ARCHITECTURE_OVERVIEW.md](./docs/ARCHITECTURE_OVERVIEW.md)
 - [docs/DETERMINISTISCHES_LLM_RUNTIME_KONZEPT.md](./docs/DETERMINISTISCHES_LLM_RUNTIME_KONZEPT.md)
 - [docs/TODO.md](./docs/TODO.md)
+
+Release governance:
+
 - [docs/releases/VERSIONING.md](./docs/releases/VERSIONING.md)
 - [docs/releases/RELEASE_PROCESS.md](./docs/releases/RELEASE_PROCESS.md)
 - [CHANGELOG.md](./CHANGELOG.md)
 
-Full docs index:
-- [docs/README.md](./docs/README.md)
-
-## Contributing and Release
+## Contributing and Security
 
 - Contribution rules: [CONTRIBUTING.md](./CONTRIBUTING.md)
 - Security policy: [SECURITY.md](./SECURITY.md)
-- Release process: [docs/releases/RELEASE_PROCESS.md](./docs/releases/RELEASE_PROCESS.md)
-- Versioning: [docs/releases/VERSIONING.md](./docs/releases/VERSIONING.md)
 
 ## Source of Truth Notice
 
@@ -138,6 +138,7 @@ Full docs index:
 It is explicitly **not** the source of truth.
 
 Authoritative references:
+
 - [LLM_ENTRY.md](./LLM_ENTRY.md)
 - [docs/LLM_ENTRY_CONFORMITY.md](./docs/LLM_ENTRY_CONFORMITY.md)
 - [docs/HANDSHAKE_CURRENT_STATE.md](./docs/HANDSHAKE_CURRENT_STATE.md)

@@ -14,6 +14,6 @@
 - [ ] Add CI status badges to README after first green runs on GitHub.
 
 ## P2 (quality)
-- [ ] Add LICENSE.
+- [ ] Decide final licensing (current `LICENSE` is a conservative "all rights reserved" placeholder).
 - [ ] Extend operator docs with concrete failure-mode playbooks.
 - [ ] Add release smoke-check script output snapshots to release notes template.

@@ -1,27 +1,33 @@
-# Docs Index
+# Docs
 
-This repository uses a consolidated documentation model.
+This repository uses a consolidated documentation model: one current-state handshake, plus a small set of canonical documents.
 
-## Canonical Documents
+## Start Here (Authoritative)
 
-1. [HANDSHAKE_CURRENT_STATE.md](./HANDSHAKE_CURRENT_STATE.md)  
-Current verified project state, scope boundaries, and runbook-level truth.
+- [HANDSHAKE_CURRENT_STATE.md](./HANDSHAKE_CURRENT_STATE.md)
 
-2. [DETERMINISTISCHES_LLM_RUNTIME_KONZEPT.md](./DETERMINISTISCHES_LLM_RUNTIME_KONZEPT.md)  
-Target architecture and non-negotiable runtime-first principles.
+This is the single verified snapshot of "what is true right now" (scope boundaries, gates, and release baseline).
 
-3. [TODO.md](./TODO.md)  
-Single prioritized implementation backlog.
+## Architecture and Concept
 
-4. [releases/VERSIONING.md](./releases/VERSIONING.md)  
-Semantic versioning policy and bump rules.
+- [ARCHITECTURE_OVERVIEW.md](./ARCHITECTURE_OVERVIEW.md)
+- [DETERMINISTISCHES_LLM_RUNTIME_KONZEPT.md](./DETERMINISTISCHES_LLM_RUNTIME_KONZEPT.md)
 
-5. [releases/RELEASE_PROCESS.md](./releases/RELEASE_PROCESS.md)  
-Release handshake and operational release checklist.
+## Operations (Local)
 
-## Support References
+- [LOCAL_LLAMACPP_SETUP.md](./LOCAL_LLAMACPP_SETUP.md)
 
+## Releases and Versioning
+
+- [releases/VERSIONING.md](./releases/VERSIONING.md)
+- [releases/RELEASE_PROCESS.md](./releases/RELEASE_PROCESS.md)
+- [../CHANGELOG.md](../CHANGELOG.md)
+
+## Contribution and Governance
+
+- [../CONTRIBUTING.md](../CONTRIBUTING.md)
+- [../SECURITY.md](../SECURITY.md)
 - [../LLM_ENTRY.md](../LLM_ENTRY.md)
 - [LLM_ENTRY_CONFORMITY.md](./LLM_ENTRY_CONFORMITY.md)
-- [LOCAL_LLAMACPP_SETUP.md](./LOCAL_LLAMACPP_SETUP.md)
+
 

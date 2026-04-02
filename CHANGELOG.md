@@ -9,13 +9,20 @@ The format follows Keep a Changelog and this project adheres to Semantic Version
 ### Added
 
 - `docs/HANDSHAKE_CURRENT_STATE.md` as the consolidated single current-state handshake document.
+- `docs/ARCHITECTURE_OVERVIEW.md` as a high-level architecture orientation (includes a Mermaid sequence diagram).
+- GitHub issue templates for bug reports and feature requests.
+- `RELEASE.md` as a root entry point to the release process.
+- `LICENSE` (conservative "all rights reserved" placeholder policy).
+- `AGENTS.md` to document agent/assistant interaction rules for this repository.
 
 ### Changed
 
-- `README.md` aligned to a runtime-first, single-truth documentation model.
-- `docs/README.md` reduced to canonical docs and support references only.
+- `README.md` rewritten to be product-oriented (vision, goals, USPs, comparison table) while keeping the "not source of truth" rule.
+- `docs/README.md` restructured as a navigation hub (Start here, Architecture, Ops, Releases).
 - `docs/TODO.md` rewritten as the single prioritized backlog.
 - Release governance docs (`docs/releases/VERSIONING.md`, `docs/releases/RELEASE_PROCESS.md`) aligned with the consolidated docs structure.
+- GitHub Actions release workflow hardened to enforce tag/package version alignment and mandatory changelog sections.
+- Local llama.cpp setup doc clarified that GGUF binaries are intentionally gitignored.
 
 ### Removed
 

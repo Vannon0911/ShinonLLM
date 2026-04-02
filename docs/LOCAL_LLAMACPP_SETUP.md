@@ -6,11 +6,16 @@ Stand: 2026-04-02
 
 Lokaler `llama.cpp` Betrieb fuer schnelle QA mit GGUF-Modellen, passend zur Runtime-First Ausrichtung.
 
-## Quick-QA Basismodell (bereits geladen)
+## Quick-QA Basismodell (empfohlen)
 
 - Modell-Datei: `ops/models/qwen2.5-0.5b-instruct-q4_k_m.gguf`
 - Groesse: ca. 491 MB
 - Quelle: [Qwen/Qwen2.5-0.5B-Instruct-GGUF](https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF)
+
+Hinweis:
+
+- GGUF-Binaries sind absichtlich nicht Teil des Git-Repos (`ops/models/*.gguf` ist gitignored).
+- Lege die Datei lokal unter `ops/models/` ab und committe sie nicht.
 
 ## Starten (Docker Compose)
 
