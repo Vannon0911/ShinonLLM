@@ -1,73 +1,51 @@
-# ShinonLLM Runtime
+# ShinonLLM
 
-Deterministic local LLM runtime with strict validation gates, contract-first backend behavior, and a Next.js frontend shell.
+ShinonLLM ist ein Projekt fuer eine verlassliche, lokal kontrollierbare KI-Runtime mit klarem Fokus auf Stabilitaet, Nachvollziehbarkeit und saubere Weiterentwicklung.
 
-## Project Structure
+## Einfuehrung
 
-- `backend/` HTTP routes and runtime entry (`/health`, `/chat`)
-- `frontend/` Next.js App Router UI
-- `orchestrator/` prompt, guardrail, and routing pipeline
-- `inference/` backend routing and adapter layer
-- `memory/` retrieval and session memory logic
-- `telemetry/` replay hash + event integrity
-- `tests/` unit, integration, e2e, and gate checks
-- `ops/` local stack scripts and gate automation
+Dieses Repository zeigt, wie wir ShinonLLM als ernsthafte Produktbasis aufbauen: kein Show-Prototype, sondern ein System, das in echten Workflows tragfaehig werden soll.
 
-## Quick Start
+## Was wir planen
 
-Prerequisite: Node.js LTS (24+ recommended).
+- Ein konsistentes Nutzererlebnis von Anfrage bis Antwort
+- Eine klare Produktlinie von lokalem Betrieb bis strukturierter Auslieferung
+- Eine belastbare Qualitaetskultur, die vor Geschwindigkeit kommt
 
-```powershell
-# install root runtime tooling
-npm install
+## Was wir haben
 
-# install frontend dependencies
-cd frontend
-npm install
-cd ..
+- Eine funktionierende Runtime-Basis mit klarer Modulstruktur
+- Verbindliche Qualitaets-Gates fuer reproduzierbares Verhalten
+- Ein Repository, das als saubere Projektgrundlage dient
+
+## Was noch fehlt
+
+- Produktreife End-to-End Nutzerfuehrung
+- Staerkere Praesentation fuer reale Use Cases und Demos
+- Kontinuierliche Politur fuer Team- und Release-Prozesse
+
+## Projektbild
+
+```mermaid
+flowchart LR
+  A["Vision"] --> B["ShinonLLM"]
+  B --> C["Stabile Runtime"]
+  B --> D["Vertrauenswertes Verhalten"]
+  B --> E["Schrittweise Produktreife"]
 ```
 
-## Verification Workflow (Required)
-
-Run backend validation first:
-
-```powershell
-npm run verify:backend
+```text
+Idee -> Struktur -> Stabilitaet -> Vertrauen -> Produkt
 ```
 
-What this covers:
-- contract gate checks
-- deterministic replay gate checks
-- backend unit tests
-- backend integration tests
+## Ueber mich
 
-Then verify frontend build:
+Ich entwickle ShinonLLM mit dem Anspruch, ein robustes und ehrlich praesentiertes Projekt zu bauen: klar in der Richtung, diszipliniert in der Umsetzung und offen fuer konsequente Verbesserung.
 
-```powershell
-cd frontend
-npm run build
-cd ..
-```
+## Wichtiger Vermerk
 
-## Local Runtime
-
-```powershell
-# terminal 1
-cd backend
-npm run start
-
-# terminal 2
-cd frontend
-npm run dev
-```
-
-Backend defaults to `http://127.0.0.1:3001`; frontend runs on `http://localhost:3000` and proxies `/api/*`.
-
-## LLM Entry Compliance
-
-This repository uses a mandatory LLM entry contract at:
+`README.md` ist keine Source of Truth.  
+Verbindlich sind:
 
 - [LLM_ENTRY.md](./LLM_ENTRY.md)
 - [docs/LLM_ENTRY_CONFORMITY.md](./docs/LLM_ENTRY_CONFORMITY.md)
-
-Changes that break contract ordering, deterministic guarantees, or verification gates are considered invalid.
