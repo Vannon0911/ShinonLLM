@@ -2,6 +2,7 @@ import { sha256Hex } from "../../../shared/src/utils/hash.js";
 import { stableJson } from "../../../shared/src/utils/stableJson.js";
 import { callLlamaCpp } from "../adapters/llamacppAdapter.js";
 import { callOllama } from "../adapters/ollamaAdapter.js";
+import { waitForBackend, resolveHealthUrl } from "../retry/backendRetry.js";
 
 type PlainObject = Record<string, unknown>;
 
@@ -148,7 +149,7 @@ function normalizeRouteDecision(candidate: unknown): BackendRouteDecision {
     failClosed("BACKEND_ROUTE_INVALID", "route decision.model must be a non-empty string");
   }
 
-  if (candidate.options?.live === false) {
+  if ((candidate.options as any)?.live === false) {
     failClosed("BACKEND_ROUTE_INVALID", "route decision.options.live=false is not allowed");
   }
 
@@ -168,19 +169,36 @@ function normalizeRouteDecision(candidate: unknown): BackendRouteDecision {
     failClosed("BACKEND_ROUTE_INVALID", "route decision.options must be a plain object when provided");
   }
 
+  const env = (globalThis as typeof globalThis & {
+    process?: {
+      env?: Record<string, string | undefined>;
+    };
+  }).process?.env;
+
+  const baseUrl = isNonEmptyString(candidate.baseUrl)
+    ? candidate.baseUrl.trim()
+    : backend === "ollama"
+      ? env?.OLLAMA_BASE_URL?.trim() || "http://127.0.0.1:11434"
+      : env?.LLAMA_CPP_BASE_URL?.trim() || "http://127.0.0.1:8000";
+
+  const endpoint = isNonEmptyString(candidate.endpoint)
+    ? candidate.endpoint.trim()
+    : baseUrl;
+
   return Object.freeze({
     backend,
-    fallbackBackend,
+    fallbackBackend: fallbackBackend ?? undefined,
     allowFallback: candidate.allowFallback !== false,
     model: candidate.model.trim(),
     requestId: isNonEmptyString(candidate.requestId) ? candidate.requestId.trim() : undefined,
     sessionId: isNonEmptyString(candidate.sessionId) ? candidate.sessionId.trim() : undefined,
     conversationId: isNonEmptyString(candidate.conversationId) ? candidate.conversationId.trim() : undefined,
-    baseUrl: isNonEmptyString(candidate.baseUrl) ? candidate.baseUrl.trim() : undefined,
-    endpoint: isNonEmptyString(candidate.endpoint) ? candidate.endpoint.trim() : undefined,
+    baseUrl,
+    endpoint,
     timeoutMs: toInteger(candidate.timeoutMs, 0) || undefined,
-    stream: candidate.stream !== false,
-    headers: candidate.headers !== undefined ? Object.freeze({ ...candidate.headers }) : undefined,
+    // FIX: stream defaults to false — adapters don't stream yet, true was a lying default
+    stream: candidate.stream === true,
+    headers: candidate.headers !== undefined ? Object.freeze({ ...(candidate.headers as Record<string, string>) }) : undefined,
     policyId: isNonEmptyString(candidate.policyId) ? candidate.policyId.trim() : undefined,
     options: candidate.options !== undefined ? Object.freeze({ ...candidate.options }) : undefined,
   });
@@ -333,11 +351,27 @@ async function callLiveBackend(
   decision: BackendRouteDecision,
   promptPayload: PromptPayload,
 ): Promise<NormalizedModelResponse> {
-  const promptText = toPromptText(promptPayload);
   const requestId = promptPayload.requestId ?? decision.requestId;
   const sessionId = promptPayload.sessionId ?? decision.sessionId;
   const conversationId = promptPayload.conversationId ?? decision.conversationId;
-  const streamed = decision.stream !== false;
+  const streamed = decision.stream === true;
+
+  // Retry: probe backend health before committing to the adapter call.
+  // This prevents the offline-fallback from silently echoing user input
+  // when the backend is just slow to start rather than permanently down.
+  const retryAttempts = 3;
+  const healthUrl = decision.backend === "llamacpp" || decision.backend === "ollama"
+    ? resolveHealthUrl(decision.backend)
+    : null;
+
+  if (healthUrl) {
+    await waitForBackend({
+      healthUrl,
+      maxAttempts: retryAttempts,
+      initialDelayMs: 800,
+      maxDelayMs: 5000,
+    });
+  }
 
   if (decision.backend === "ollama") {
     const result = await callOllama(decision, promptPayload);

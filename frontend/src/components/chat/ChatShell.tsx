@@ -312,7 +312,7 @@ export function ChatShell({
     setMessages((current) => [
       ...current,
       {
-        id: payload.requestId,
+        id: `${payload.requestId}-user`,
         role: "user",
         content: normalizedText,
       },
@@ -321,7 +321,7 @@ export function ChatShell({
     try {
       const response = await sendChatRequest(payload, apiBasePath);
       const assistantMessage: ChatMessage = {
-        id: response.requestId,
+        id: `${response.requestId}-assistant`,
         role: "assistant",
         content: response.reply,
       };

@@ -6,28 +6,56 @@ The format follows Keep a Changelog and this project adheres to Semantic Version
 
 ## [Unreleased]
 
+### Planned (deferred to next release)
+
+- Frontend: Auto-generate `sessionId` + `conversationId` to activate backend memory persistence.
+- Memory: Frequency-based pattern tracking (count how often concepts appear across sessions).
+- Memory: Impact-weighted scoring (weight entries by user engagement, not just recency).
+- Inference: Persona drift detection mode ("Drift-Schutz").
+- Inference: Internal model evaluation pipeline (benchmark small models for quality/speed).
+- Ops: CI status badges in README (needs `Vannon0911/ShinonLLM` slug replacement).
+- Legal: Final licensing decision (current `LICENSE` is Apache-2.0).
+
+## [0.2.3a] - 2026-04-03
+
 ### Added
 
-- `docs/HANDSHAKE_CURRENT_STATE.md` as the consolidated single current-state handshake document.
-- `docs/ARCHITECTURE_OVERVIEW.md` as a high-level architecture orientation (includes a Mermaid sequence diagram).
-- GitHub issue templates for bug reports and feature requests.
-- `RELEASE.md` as a root entry point to the release process.
-- `LICENSE` (conservative "all rights reserved" placeholder policy).
-- `AGENTS.md` to document agent/assistant interaction rules for this repository.
+- Runtime stress test verification: 6 test cases (German, English, Japanese/Unicode, nonsense, long-string, empty input) validated through live llama.cpp Qwen 0.5B inference.
+- Memory Policy audit: full implementation-vs-documentation verification completed.
+- Backend retry mechanism: `inference/src/retry/backendRetry.ts` for reliable service availability.
+- Backend SQLite session persistence with schema migrations (`PRAGMA user_version`).
+- `AGENTS.md` repo-level agent interaction rules.
+- GitHub issue templates (bug report, feature request), PR template, Dependabot config.
+- CI workflow (`ci.yml`) and hardened release workflow (`release.yml`).
+- `CONTRIBUTING.md`, `SECURITY.md`, `LICENSE` (Apache-2.0).
+- Runtime control scripts: `start-local.ps1`, `stop-local.ps1`.
+- Ops scripts: `release-smoke.ps1`, `start-llamacpp.ps1`, `cleanup-frontend-next.ps1`.
+- Docs: `ARCHITECTURE_OVERVIEW.md`, `MEMORY_POLICY.md`, `OPS_PLAYBOOKS.md`, `gemini.md`.
+- Docs: Validation matrix `MATRIX__VALIDATION_GATES.md`.
+- Visual assets for GitHub presentation: hero banner, problem/solution comparison, architecture diagram, live chat UI screenshot.
 
 ### Changed
 
-- `README.md` rewritten to be product-oriented (vision, goals, USPs, comparison table) while keeping the "not source of truth" rule.
-- `docs/README.md` restructured as a navigation hub (Start here, Architecture, Ops, Releases).
-- `docs/TODO.md` rewritten as the single prioritized backlog.
-- Release governance docs (`docs/releases/VERSIONING.md`, `docs/releases/RELEASE_PROCESS.md`) aligned with the consolidated docs structure.
-- GitHub Actions release workflow hardened to enforce tag/package version alignment and mandatory changelog sections.
-- Local llama.cpp setup doc clarified that GGUF binaries are intentionally gitignored.
+- README completely rewritten: product-pitch narrative (WHY Shinon, MVP scope, long-term vision, real statistics, scoring formula), replaces pure tech-doc approach.
+- CHANGELOG restructured: unfinished items explicitly deferred to `[Unreleased]` with clear scope notes.
+- Scoring engine documented with actual formula: `relevance×0.70 + intentMatch×0.20 + recency×0.05 + structural×0.05 + positionBonus×0.01`.
+- Backend router now integrates retry mechanism for reliable inference service availability.
+- Frontend chat UX hardened for request timeout and concurrent send protection.
+- Package versions at `0.2.3` (root/backend/frontend).
 
-### Removed
+### Verified
 
-- Legacy split documentation and presentation artifacts superseded by canonical docs in `docs/`.
-- Per-directory `report.md` files removed project-wide to prevent conflicting documentation narratives.
+- llama.cpp Qwen 0.5B: live inference verified for DE/EN/JP/Unicode input.
+- Session memory persistence: InMemory implementation active (SQLite code ready, not activated by default).
+- Contract gates, replay gates, baseline integrity gates: all passing.
+- 9 test suites across gates/unit/integration/e2e.
+- 52 TypeScript source files across 8 modules.
+
+### Known Issues
+
+- Frontend `page.tsx` does not pass `sessionId`/`conversationId` to `ChatShell` — backend memory persistence is not activated in the default UI flow. Fix deferred to next release.
+- llama.cpp KV-cache bleeds context across requests when given nonsense input (model-level, not runtime-level).
+- Qwen 0.5B identity hallucination: model sometimes claims to be "ein Wörterbuch" without a system prompt.
 
 ## [0.2.3] - 2026-04-02
 
@@ -39,11 +67,6 @@ The format follows Keep a Changelog and this project adheres to Semantic Version
 - Repo hygiene artifacts:
   - `.editorconfig`
   - `.gitattributes`
-  - `docs/REPO_HYGIENE_0.2.3.md`
-- Release and presentation documents for 0.2.3:
-  - `docs/releases/RELEASE_0.2.3.md`
-  - `docs/MVP_SCOPE_SCAN_0.2.3.md`
-  - `docs/PRAESENTATION_0.2.3.md`
 
 ### Changed
 
@@ -51,44 +74,35 @@ The format follows Keep a Changelog and this project adheres to Semantic Version
 - Memory decay handling hardened in write path (no optional runtime skip).
 - Frontend chat UX hardened to avoid blocked input/model selection during in-flight requests and to enforce request timeout behavior.
 - Package versions promoted from `0.2.1-a` to stable `0.2.3` (root/backend/frontend + lockfiles).
-- README and docs index updated for GitHub presentation and current release artifacts.
 
 ## [0.2.1a] - 2026-04-02
 
 ### Added
 
-- MVP target architecture documentation based on `FELIX_SYSTEM_ARCHITECTURE-1.docx`:
-  - `docs/ZIELARCHITEKTUR_MVP.md`
-  - `docs/MVP_SCOPE_SCAN_0.2.1a.md`
-  - `docs/PRAESENTATION_0.2.1a.md`
-- Session memory persistence contract test coverage (`tests/unit/session-persistence.spec.ts`) integrated into backend verification scripts.
+- MVP target architecture documentation based on `FELIX_SYSTEM_ARCHITECTURE-1.docx`.
+- Session memory persistence contract test coverage integrated into backend verification scripts.
 
 ### Changed
 
-- Project/package versions moved to semver-compatible prerelease `0.2.1-a` for root/backend/frontend packages.
-- README and docs index expanded with significantly more consumer/dev architecture content.
+- Project/package versions moved to semver-compatible prerelease `0.2.1-a`.
 - Target system overview rewritten for runtime-first MVP scope alignment.
-- Legacy `docs/ARCHITECTURE` file converted from placeholder code to architecture pointer text.
 
 ## [0.2.0] - 2026-04-02
 
 ### Added
 
-- Canonical API path support for `/api/chat` and `/api/health` while keeping compatibility aliases.
-- GitHub release playbook with visual assets and UI/UX release concept graphics.
+- Canonical API path support for `/api/chat` and `/api/health`.
+- GitHub release playbook with visual assets.
 - Local llama.cpp setup guide and Quick-QA script.
-- Consumer-first README structure with product positioning, founder intro, and clear vision section.
 
 ### Changed
 
 - Chat route now uses orchestrator execution by default instead of implicit echo fallback.
-- Integration tests updated for orchestrator-default behavior and canonical API path usage.
-- Local ops runtime scripts now validate presence of llama.cpp model files before startup.
-- `.gitignore` updated to exclude local GGUF model binaries under `ops/models`.
+- Integration tests updated for orchestrator-default behavior.
+- Local ops runtime scripts validate presence of llama.cpp model files before startup.
 
 ## [0.1.0] - 2026-04-02
 
 ### Added
 
 - Initial runtime contracts, gate checks, and architecture baseline.
-

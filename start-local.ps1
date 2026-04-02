@@ -71,6 +71,19 @@ try {
 }
 "@
 
+  $llamacppScript = Join-Path $repoRoot "ops\scripts\start-llamacpp.ps1"
+  if (-not (Test-Path -LiteralPath $llamacppScript -PathType Leaf)) {
+    throw "llama.cpp Script nicht gefunden: $llamacppScript"
+  }
+
+  Write-Host "Starte llama.cpp Infrastruktur..."
+  try {
+    & $llamacppScript -ModelFile 'qwen2.5-0.5b-instruct-q4_k_m.gguf' -Port 8000 -HealthTimeout 120
+  } catch {
+    Write-Warning "Infrastruktur konnte nicht korrekt gestartet werden: $($_.Exception.Message)"
+    exit 1
+  }
+
   Start-Process -FilePath "powershell" -ArgumentList @(
     "-NoExit",
     "-ExecutionPolicy", "Bypass",
