@@ -8,6 +8,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -24,6 +28,40 @@ jobs:
           cache-dependency-path: |
             package-lock.json
             frontend/package-lock.json
+
+      - name: Validate tag, package versions, and changelog section
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"
+          VERSION="${TAG#v}"
+
+          node --input-type=module <<'NODE'
+          import fs from "node:fs";
+
+          const tag = process.env.GITHUB_REF_NAME;
+          const version = tag.replace(/^v/, "");
+
+          const files = ["package.json", "backend/package.json", "frontend/package.json"];
+          const mismatches = [];
+
+          for (const f of files) {
+            const data = JSON.parse(fs.readFileSync(f, "utf8"));
+            if (data.version !== version) mismatches.push(`${f}: ${data.version}`);
+          }
+
+          if (mismatches.length) {
+            console.error(`Tag version '${version}' must match all package.json versions.\nMismatches:\n- ${mismatches.join("\n- ")}`);
+            process.exit(1);
+          }
+
+          const changelog = fs.readFileSync("CHANGELOG.md", "utf8");
+          const header = `## [${version}]`;
+          if (!changelog.includes(header)) {
+            console.error(`CHANGELOG.md must contain a section '${header}' for tag ${tag}.`);
+            process.exit(1);
+          }
+          NODE
 
       - name: Install root dependencies
         run: npm ci
@@ -47,15 +85,11 @@ jobs:
           awk -v ver="$VERSION" '
             $0 ~ "^## \\[" ver "\\]" { capture=1; next }
             capture && $0 ~ "^## \\[" { capture=0 }
-            capture { print }
           ' CHANGELOG.md > RELEASE_NOTES.md
 
           if [ ! -s RELEASE_NOTES.md ]; then
-            {
-              echo "Release ${GITHUB_REF_NAME}"
-              echo
-              echo "No dedicated changelog section found for version ${VERSION}."
-            } > RELEASE_NOTES.md
+            echo "::error::CHANGELOG.md section for version ${VERSION} exists but has no content."
+            exit 1
           fi
 
       - name: Publish GitHub Release

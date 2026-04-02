@@ -11,8 +11,8 @@ Danke fuer deinen Beitrag zu ShinonLLM.
 ## Setup und Pflichtchecks
 
 1. Abhaengigkeiten installieren:
-   - `npm install`
-   - `npm --prefix frontend install`
+   - `npm ci`
+   - `npm --prefix frontend ci`
 2. Verifikation ausfuehren:
    - `npm run verify:backend`
    - `npm --prefix frontend run build`
