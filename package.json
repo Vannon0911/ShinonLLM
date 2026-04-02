@@ -1,7 +1,7 @@
 {
   "name": "llmrab-runtime",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
     "test:determinism": "node --import tsx ./tests/gates/replay-gate.spec.ts",

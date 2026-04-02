@@ -1,51 +1,68 @@
-# ShinonLLM
+﻿# ShinonLLM
 
-ShinonLLM is a runtime-first companion stack for local and hybrid LLM workflows.
+## Für Nutzer (Consumer) - zuerst
 
-Core principle: **The runtime thinks, the LLM formulates text.**
+### Was ist ShinonLLM?
+ShinonLLM ist dein lokaler KI-Begleiter fuer fokussierte, nachvollziehbare Antworten.
+Der Kernansatz ist einfach: Das System steuert die Logik, das Sprachmodell formuliert nur den Text.
 
-## Product Vision
+### Was bringt dir das konkret?
+- Mehr Konsistenz: Antworten springen weniger, weil Regeln und Kontext sauber gesteuert werden.
+- Mehr Kontrolle: Du kannst lokal arbeiten, statt alles in einen Blackbox-Cloud-Flow zu schieben.
+- Mehr Verlaesslichkeit: Entscheidungen im System sind besser pruefbar und reproduzierbar.
 
-ShinonLLM is built as a deterministic runtime product, not a prompt playground.
-The runtime owns state, memory policy, scoring, and context boundaries.
-The model is intentionally scoped to language output, tone adaptation, and response formatting.
+### Fuer wen ist das gemacht?
+- Creator, Solopreneure und kleine Teams, die einen lokalen KI-Workflow wollen.
+- Nutzer, die keine KI wollen, die heute A und morgen B behauptet.
+- Menschen, die lieber ein klares Produkt als ein Prompt-Spielzeug wollen.
 
-## Why This Exists
+### Person hinter dem Projekt
+Ich bin **Felix Vannon**.
+Ich baue ShinonLLM als bewusstes Gegenmodell zu unkontrollierten Chat-Setups: weniger Hype, mehr Substanz, mehr Verantwortung im Runtime-Layer.
 
-Typical companion stacks blur responsibility: the model decides too much, memory drifts, and behavior becomes hard to verify.
-ShinonLLM enforces strict runtime ownership so decisions are testable, replayable, and operationally controllable.
+### Ziel und Vision
+**Ziel:** Eine lokale Web-App, die in Alltag und Arbeit stabil nutzbar ist, nicht nur in Demos.
 
-## Unique Selling Points
+**Vision:** Ein Consumer-Produkt, bei dem KI nuetzlich bleibt, weil die Plattform klar fuehrt.
+Keine magische Selbsttaeuschung, kein "trust me bro" - sondern ein System, das sich verhalten kann.
 
-- Runtime-first control plane with explicit contracts and fail-closed behavior.
-- Determinism gates and replay checks for reproducible outputs.
-- Contract-scoped memory writes instead of free-form model mutation.
-- Local-first architecture with adapter-ready inference integration.
-- Clear separation between orchestration logic and text generation logic.
+---
 
-## Runtime Model (Visual)
+## Fuer Entwickler (Technical)
 
-![ShinonLLM runtime overview](./docs/assets/runtime-overview.svg)
+### Projektphilosophie
+**The runtime thinks, the LLM formulates text.**
 
-## ShinonLLM vs Typical Companion Stacks
+Das heisst:
+- Runtime entscheidet ueber Kontext, Regeln, Priorisierung und Memory-Schreiben.
+- Das Modell bekommt ein kuratiertes Paket und produziert Sprachoutput.
+- Fail-closed und Determinismus haben Vorrang vor "sieht cool aus".
 
-| Area | ShinonLLM | Typical Companion Stack |
-|---|---|---|
-| Decision authority | Runtime contracts and gates | Model heuristics |
-| Memory writes | Contract-gated, fail-closed | Often implicit and permissive |
-| Reproducibility | Replay and gate checks | Best-effort, hard to prove |
-| Context assembly | Runtime curated package | Prompt growth and drift |
-| Product operations | Explicit release and gate process | Ad hoc scripts and manual checks |
+### Architektur (kurz)
+- `backend/`: HTTP-Entry und Route-Verhalten
+- `orchestrator/`: Contracts, Prompt-Building, Modellrouting, Guardrails
+- `inference/`: Adapter fuer `ollama` und `llama.cpp`
+- `memory/`: Session/Longterm Retrieval- und Store-Logik
+- `telemetry/`: Replay/Hash/Evidence fuer reproduzierbare Pruefungen
+- `tests/`: Gates, Unit, Integration
 
-## Clear Objectives
+### Vergleich zu typischen Loesungen
 
-1. Ship a runtime that is explainable under load, not only in demos.
-2. Keep model behavior bounded by deterministic runtime contracts.
-3. Make releases audit-ready through CI gates and changelog discipline.
+| Bereich | ShinonLLM | Typische Chat-Wrapper | Typische Agent-Stacks |
+|---|---|---|---|
+| Entscheidungsautoritaet | Runtime-first | oft model-first | haeufig tool-chain-first |
+| Memory Writes | contract-gated | oft implizit | je nach Framework uneinheitlich |
+| Reproduzierbarkeit | Replay/Gates | meist best effort | haeufig schwer nachzuvollziehen |
+| Lokaler Betrieb | explizit vorgesehen | oft cloud-zentriert | gemischt |
+| Produktfokus | Runtime-Produkt | UI-orientierte Huelle | Entwickler-Toolkit |
 
-## Quickstart
+### Aktueller Produktstand (ehrlich)
+- Runtime-, Contract- und Replay-Basics sind vorhanden.
+- Lokaler `llama.cpp`-Pfad inkl. Quick-QA Setup ist vorbereitet.
+- Memory-Persistenz ueber Restart (SQLite + Decay im produktiven Pfad) ist als naechste Kernstufe definiert.
 
-Prerequisites: Node.js LTS.
+### Schnellstart
+Voraussetzung: Node.js LTS
 
 ```powershell
 npm install
@@ -54,21 +71,23 @@ npm run verify:backend
 cd frontend; npm run build; cd ..
 ```
 
-## Documentation Map
+Lokaler `llama.cpp` Setup:
+- [docs/LOCAL_LLAMACPP_SETUP.md](./docs/LOCAL_LLAMACPP_SETUP.md)
 
-- Product framing: [docs/PRODUCT_POSITIONING.md](./docs/PRODUCT_POSITIONING.md)
-- Docs index: [docs/README.md](./docs/README.md)
-- Runtime concept: [docs/DETERMINISTISCHES_LLM_RUNTIME_KONZEPT.md](./docs/DETERMINISTISCHES_LLM_RUNTIME_KONZEPT.md)
-- Target overview: [docs/TARGET_SYSTEM_OVERVIEW.md](./docs/TARGET_SYSTEM_OVERVIEW.md)
-- Versioning policy: [docs/releases/VERSIONING.md](./docs/releases/VERSIONING.md)
-- Release process: [docs/releases/RELEASE_PROCESS.md](./docs/releases/RELEASE_PROCESS.md)
-- Changelog: [CHANGELOG.md](./CHANGELOG.md)
+GitHub Release Ablauf:
+- [docs/GITHUB_RELEASE_PLAYBOOK.md](./docs/GITHUB_RELEASE_PLAYBOOK.md)
 
-## Source of Truth
+### Dokumentation
+- [docs/README.md](./docs/README.md)
+- [docs/TARGET_SYSTEM_OVERVIEW.md](./docs/TARGET_SYSTEM_OVERVIEW.md)
+- [docs/DETERMINISTISCHES_LLM_RUNTIME_KONZEPT.md](./docs/DETERMINISTISCHES_LLM_RUNTIME_KONZEPT.md)
+- [docs/releases/RELEASE_PROCESS.md](./docs/releases/RELEASE_PROCESS.md)
+- [CHANGELOG.md](./CHANGELOG.md)
 
-`README.md` is not Source of Truth.
+### Source of Truth
+`README.md` ist Einstieg, nicht alleinige technische Wahrheit.
 
-Authoritative references:
+Autoritative Referenzen:
 - [LLM_ENTRY.md](./LLM_ENTRY.md)
 - [docs/LLM_ENTRY_CONFORMITY.md](./docs/LLM_ENTRY_CONFORMITY.md)
 - [docs/DETERMINISTISCHES_LLM_RUNTIME_KONZEPT.md](./docs/DETERMINISTISCHES_LLM_RUNTIME_KONZEPT.md)
