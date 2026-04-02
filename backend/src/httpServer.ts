@@ -139,10 +139,21 @@ async function main(): Promise<void> {
   const host = process.env.BACKEND_HOST?.trim() || DEFAULT_HOST;
   const portCandidate = Number.parseInt(process.env.BACKEND_PORT ?? `${DEFAULT_PORT}`, 10);
   const port = Number.isInteger(portCandidate) && portCandidate > 0 ? portCandidate : DEFAULT_PORT;
+  const runtimeBackend =
+    process.env.SHINON_RUNTIME_BACKEND?.trim() === "llamacpp" ? "llamacpp" : "ollama";
+  const runtimeFallbackBackend =
+    runtimeBackend === "llamacpp" ? "ollama" : "llamacpp";
+  const runtimeModel = process.env.SHINON_RUNTIME_MODEL?.trim() || "qwen2.5:0.5b";
 
   const memoryTtlSeconds = toPositiveInteger(process.env.SHINON_MEMORY_TTL_SECONDS);
   const sessionMemoryPersistence = await createSessionMemoryPersistence();
   const chatRoute = createChatRoute({
+    memoryContext: Object.freeze({
+      backend: runtimeBackend,
+      fallbackBackend: runtimeFallbackBackend,
+      modelHint: runtimeModel,
+      allowFallback: true,
+    }),
     sessionMemoryPersistence,
     memoryTtlSeconds,
     memoryDecayKeepLatest: toPositiveInteger(process.env.SHINON_MEMORY_KEEP_LATEST_PER_CONVERSATION),

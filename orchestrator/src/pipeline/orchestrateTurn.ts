@@ -274,7 +274,13 @@ export async function orchestrateTurn(input: OrchestrateTurnInput): Promise<Orch
       }),
       Object.freeze({
         userText: normalized.userText,
-        messages: normalized.history,
+        messages: [
+          ...normalized.history,
+          {
+            role: "user",
+            content: normalized.userText,
+          },
+        ],
         requestId: normalized.request?.requestId,
         sessionId: normalized.request?.sessionId,
         conversationId: normalized.request?.conversationId,

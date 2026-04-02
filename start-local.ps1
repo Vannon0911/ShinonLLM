@@ -15,6 +15,15 @@ function Resolve-NpmCommand {
   throw "npm wurde nicht gefunden. Installiere Node.js oder fuege npm zu PATH hinzu."
 }
 
+function Convert-ToSingleQuotedPsLiteral {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string]$Value
+  )
+
+  return "'" + $Value.Replace("'", "''") + "'"
+}
+
 function Start-ShinonLocalStack {
   [CmdletBinding()]
   param()
@@ -28,6 +37,7 @@ function Start-ShinonLocalStack {
   $npmCommand = Resolve-NpmCommand
   $backendPath = Join-Path $repoRoot "backend"
   $frontendPath = Join-Path $repoRoot "frontend"
+  $stopScriptPath = Join-Path $repoRoot "stop-local.ps1"
 
   if (-not (Test-Path -LiteralPath $backendPath -PathType Container)) {
     throw "Backend-Verzeichnis fehlt: $backendPath"
@@ -36,8 +46,30 @@ function Start-ShinonLocalStack {
     throw "Frontend-Verzeichnis fehlt: $frontendPath"
   }
 
-  $backendCmd = "Set-Location -LiteralPath '$backendPath'; & '$npmCommand' run dev"
-  $frontendCmd = "Set-Location -LiteralPath '$frontendPath'; & '$npmCommand' run dev"
+  $backendPathLiteral = Convert-ToSingleQuotedPsLiteral -Value $backendPath
+  $frontendPathLiteral = Convert-ToSingleQuotedPsLiteral -Value $frontendPath
+  $npmLiteral = Convert-ToSingleQuotedPsLiteral -Value $npmCommand
+  $stopLiteral = Convert-ToSingleQuotedPsLiteral -Value $stopScriptPath
+
+  $backendCmd = @"
+Set-Location -LiteralPath $backendPathLiteral
+Register-EngineEvent PowerShell.Exiting -Action { & $stopLiteral | Out-Null } | Out-Null
+try {
+  & $npmLiteral run dev
+} finally {
+  & $stopLiteral | Out-Null
+}
+"@
+
+  $frontendCmd = @"
+Set-Location -LiteralPath $frontendPathLiteral
+Register-EngineEvent PowerShell.Exiting -Action { & $stopLiteral | Out-Null } | Out-Null
+try {
+  & $npmLiteral run dev
+} finally {
+  & $stopLiteral | Out-Null
+}
+"@
 
   Start-Process -FilePath "powershell" -ArgumentList @(
     "-NoExit",

@@ -61,11 +61,18 @@ function buildRewrites(backendOrigin) {
 }
 
 function buildNextConfig(backendOrigin) {
+  const devAllowedOrigins = [
+    "localhost",
+    "127.0.0.1",
+    "192.168.178.35",
+  ];
+
   return {
     reactStrictMode: true,
     poweredByHeader: false,
     compress: true,
     trailingSlash: false,
+    allowedDevOrigins: devAllowedOrigins,
     async headers() {
       return [
         {
