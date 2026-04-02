@@ -34,6 +34,7 @@ export type SessionMemoryPersistence = Readonly<{
   load(scope: SessionMemoryScope): ReadonlyArray<PersistedSessionMemoryEntry>;
   append(entries: ReadonlyArray<SessionMemoryAppendInput>): number;
   decay(input?: SessionMemoryDecayInput): number;
+  getConceptFrequencies?(scope: { conversationId?: string; sessionId?: string }): Record<string, number>;
 }>;
 
 export type SessionMemorySqliteAdapter = Readonly<{
@@ -320,6 +321,13 @@ function ensureSqliteSchema(adapter: SessionMemorySqliteAdapter): void {
   failClosed(`sqlite schema version ${currentVersion} is unknown`);
 }
 
+/**
+ * Constructs a SQLite-backed SessionMemoryPersistence implementation.
+ *
+ * @param adapter - SQLite adapter providing `run(sql, params?)` and `all(sql, params?)` for executing queries.
+ * @returns A persistence object that implements `load`, `append`, `decay`, and `getConceptFrequencies`, storing session memory entries in a SQLite table.
+ * @throws If `adapter` is not a plain object with `run` and `all` functions, or if schema creation/verification fails.
+ */
 export function createSqliteSessionMemoryPersistence(
   adapter: SessionMemorySqliteAdapter,
 ): SessionMemoryPersistence {
@@ -401,5 +409,36 @@ export function createSqliteSessionMemoryPersistence(
 
       return typeof expireResult?.changes === "number" ? Math.max(0, expireResult.changes) : 0;
     },
+    getConceptFrequencies(scope: { conversationId?: string; sessionId?: string } = {}): Record<string, number> {
+      let query = "SELECT metadata_json FROM session_memory_entries WHERE role = 'user' AND metadata_json IS NOT NULL";
+      const params: string[] = [];
+      if (scope.sessionId) {
+        query += " AND session_id = ?";
+        params.push(scope.sessionId);
+      }
+      if (scope.conversationId) {
+        query += " AND conversation_id = ?";
+        params.push(scope.conversationId);
+      }
+      const rows = adapter.all(query, params);
+      const frequencies: Record<string, number> = {};
+      for (const row of rows) {
+        if (typeof row.metadata_json === "string") {
+          try {
+            const meta = JSON.parse(row.metadata_json);
+            if (Array.isArray(meta.concepts)) {
+              for (const concept of meta.concepts) {
+                if (typeof concept === "string") {
+                  frequencies[concept] = (frequencies[concept] || 0) + 1;
+                }
+              }
+            }
+          } catch {
+            // ignore
+          }
+        }
+      }
+      return frequencies;
+    }
   });
 }

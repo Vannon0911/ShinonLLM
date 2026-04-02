@@ -8,13 +8,19 @@ The format follows Keep a Changelog and this project adheres to Semantic Version
 
 ### Planned (deferred to next release)
 
-- Frontend: Auto-generate `sessionId` + `conversationId` to activate backend memory persistence.
-- Memory: Frequency-based pattern tracking (count how often concepts appear across sessions).
 - Memory: Impact-weighted scoring (weight entries by user engagement, not just recency).
 - Inference: Persona drift detection mode ("Drift-Schutz").
 - Inference: Internal model evaluation pipeline (benchmark small models for quality/speed).
 - Ops: CI status badges in README (needs `Vannon0911/ShinonLLM` slug replacement).
 - Legal: Final licensing decision (current `LICENSE` is Apache-2.0).
+
+### Added (Recent)
+
+- Frontend: `sessionId` + `conversationId` auto-generation using `node:crypto` in `app/page.tsx`.
+- Memory: Stubbed `getConceptFrequencies` for frequency-based pattern tracking.
+- Test: Added Smoke Test Plan `SMOKE_TEST_PLAN.md` (now removed/migrated).
+- Frontend: UI hardening with 25000 character limit protection.
+- Backend: SQLite memory persistence enabled by default with server logs.
 
 ## [0.2.3a] - 2026-04-03
 
@@ -53,7 +59,6 @@ The format follows Keep a Changelog and this project adheres to Semantic Version
 
 ### Known Issues
 
-- Frontend `page.tsx` does not pass `sessionId`/`conversationId` to `ChatShell` — backend memory persistence is not activated in the default UI flow. Fix deferred to next release.
 - llama.cpp KV-cache bleeds context across requests when given nonsense input (model-level, not runtime-level).
 - Qwen 0.5B identity hallucination: model sometimes claims to be "ein Wörterbuch" without a system prompt.
 

@@ -1,20 +1,21 @@
-﻿# HANDSHAKE CURRENT STATE
+# HANDSHAKE CURRENT STATE
 
-Date: 2026-04-02
-Release baseline: 0.2.3
+Date: 2026-04-03
+Release baseline: 0.2.3a
 
 ## One-line truth
 
-The runtime thinks, the LLM formulates text.
+The runtime thinks, the LLM formulates text. Wir bauen eine **Real Persona**, keinen Chat-Wrapper.
 
 ## Current architecture state
 
 - Runtime entry and request validation are active in `backend`.
 - Contract-first orchestration is active in `orchestrator`.
-- Inference routing is active in `inference` with mandatory offline evaluator evidence in live path.
+- Inference routing is active in `inference` with mandatory offline evaluator evidence and a newly added retry mechanism.
 - Session memory handling and decay path exist in `memory`.
 - SQLite session memory migration path is active via `PRAGMA user_version` (v0 -> v1).
 - Determinism and baseline gates exist in `tests/gates`.
+- **Live Inference** successfully tested via llama.cpp (Qwen 0.5B local) for DE, EN, JP, and stress conditions.
 
 ## Determinism and verification policy
 
@@ -30,29 +31,25 @@ Fail-closed principle:
 
 ## Latest verification run
 
-Executed on 2026-04-02:
+Executed on 2026-04-03:
 
 - `npm run test:determinism` -> PASS
 - `npm run verify:backend` -> PASS
-- baseline output line present:
-  `testline | seed_pair=replay-gate-run|rev=1|seq=7 | replay_hash_equal=1 | sequence_variant_diff=1 | action_set_declared=send_message,log_event | action_send_message=accepted | action_blocked_action=rejected`
+- `npm run test:e2e` -> PASS
+- Manual Live Stresstest -> PASS (Runtime stables, Context Bleed identified at LLM level)
 
-## Documentation consolidation statement
+## Scope boundaries: Pattern Analytics vs. Data Hoarding
 
-This document is the single current-state handshake.
-Older split notes and per-directory `report.md` artifacts were removed to avoid conflicting narratives.
-
-## Scope boundaries
-
+- **MVP Phase:** Local-first, persistent session runtime optimized for 0.5B-7B models.
+- **Product Phase:** Real Persona behavior through Pattern Analytics scoring (Impact & Frequency), explicitly NOT raw vector-db chat hoarding.
 - Frontend is a delivery surface, not the runtime decision source.
-- Runtime decisions, scoring, memory writes, and policy gates remain backend/orchestrator-owned.
 - Model role remains constrained to text generation and style rendering.
 
 ## Open risks
 
-- Some local `.next` files may remain locked by running processes during cleanup.
-- External-path assumptions in legacy scripts were removed; gate checks now resolve repo-local matrix paths.
+- **Frontend Memory Binding:** The `page.tsx` does not currently pass `sessionId` and `conversationId` into `ChatShell`. This leaves the entire Session Memory system inactive in the default UI flow. Will be addressed in the next release.
+- **Model Context Bleed:** The llama.cpp KV-cache bleeds previous replies when the model is forcefully fed nonsense, since it's lacking explicit cache isolation between REST calls.
 
 ## Next checkpoint
 
-After next deterministic verification run and CI confirmation, bump to next release target.
+After fixing the Frontend Memory Binding, bump to the next minor release and focus on Pattern tracking.

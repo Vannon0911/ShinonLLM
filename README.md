@@ -4,7 +4,27 @@
 
 **Die Runtime denkt. Das LLM formuliert Text.**
 
-Release: **0.2.3** · [Changelog](./CHANGELOG.md) · [Apache-2.0](./LICENSE)
+Release: **0.2.3a** · [Changelog](./CHANGELOG.md) · [Apache-2.0](./LICENSE)
+
+---
+
+## Die Vision: Echte Persona statt Chat-Wrapper
+
+ShinonLLM ist nicht dafür da, Fragen zu beantworten, die du auch Google stellen könntest. Es ist eine **lokale Begleit-Runtime**, die über Zeit ein Muster deiner Arbeitsweise und Vorlieben entwickelt. 
+
+### Der Unterschied: Pattern Analytics vs. Data Hoarding
+
+Während andere Systeme einfach Gigabytes an Chat-Logs anhäufen, analysiert ShinonLLM **Muster (Patterns)**.
+
+| Metrik | Traditionelle RAG-Systeme | Shinon Pattern Analysis |
+|---|---|---|
+| **Speicherung** | Alles wird weggeworfen oder ungefiltert gespeichert | Nur Muster mit hohem **Impact** & **Frequenz** |
+| **Kontext** | Zufällige Snippets aus alten Chats | Gezielte Aktivierung von Verhaltensmustern |
+| **Lerneffekt** | "Stell dir vor du bist..." (Prompting) | Systematische Anpassung der Scoring-Gewichts |
+| **Performance** | Riesige Vektor-DBs verlangsamen alles | Schlanke Pattern-Tokens in der Runtime-Memory |
+
+> [!TIP]
+> **Real Persona:** ShinonLLM nutzt lokale 0.5B bis 7B Modelle – wir testen intern, welches Modell für welche Persona die "Gold-Standard" Antwortzeit liefert. Keine Cloud-Latenz, kein Identitäts-Drift.
 
 ---
 
@@ -104,7 +124,29 @@ Ein lokales AI-Modell, das **persistent vom Nutzer lernt** mit zwei Modi:
 
 ![Architektur](./docs/assets/architecture.png)
 
-### Module
+### Die Architektur des Verstehens
+
+![Shinon Architecture Blueprint](./docs/assets/blueprint.png)
+
+---
+
+## Scope: MVP bis zur Langzeit-Vision (IDE)
+
+ShinonLLM wächst in drei Phasen. Was jetzt da ist (MVP), was als Produkt kommt und wo wir hinwollen (IDE).
+
+| Phase | Fokus | Kern-Feature | Status |
+|---|---|---|---|
+| **Phase 1: MVP** | Lokal-First Basis | Persistente Session-Memory & Scoring | ✅ **Aktive Basis** |
+| **Phase 2: Produkt** | Real Persona | Pattern-Analytics & Drift-Schutz | 🔧 **In Entwicklung** |
+| **Phase 3: IDE** | Langzeit Vision | Developer-First-Context / IDE Begleiter | 📋 **Backlog** |
+
+### Warum dieses System "echt" lernt
+
+Im Gegensatz zu statischen Chats, nutzt Shinon ein **dynamisches Scoring-Modell**, das nicht auf purem Datum (Data Now), sondern auf **Frequenz und Impact** basiert. Die Runtime entscheidet, welche Informationen wirklich wichtig sind.
+
+---
+
+## Module
 
 | Modul | Files | Zweck |
 |---|:---:|---|

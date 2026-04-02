@@ -43,6 +43,7 @@ type PromptBundle = Readonly<{
   runtimePlan: Readonly<{
     intent: "question" | "analysis" | "code" | "summary";
     nextAction: "answer" | "explain" | "propose_patch" | "summarize";
+    userStyle: "neutral" | "aggressive" | "cheerful" | "impatient" | "thoughtful";
   }>;
 }>;
 
@@ -148,20 +149,46 @@ function summarizeMemory(memoryContext: Readonly<Record<string, unknown>>): stri
   return entries.join(" | ");
 }
 
+/**
+ * Derives a runtime plan (intent, nextAction, and userStyle) from the user's text and conversation history.
+ *
+ * @param input - The orchestrate turn input whose `userText` and `history` are analyzed to infer intent and user tone.
+ * @returns The chosen runtime plan: an object with `intent` (`"code" | "summary" | "analysis" | "question"`), `nextAction` (`"propose_patch" | "summarize" | "explain" | "answer"`), and `userStyle` (`"neutral" | "aggressive" | "cheerful" | "impatient" | "thoughtful"`).
+ */
 function buildRuntimePlan(input: OrchestrateTurnInput): PromptBundle["runtimePlan"] {
   const text = `${input.userText} ${input.history.map((entry) => entry.content).join(" ")}`.toLowerCase();
+  
+  let userStyle: PromptBundle["runtimePlan"]["userStyle"] = "neutral";
+  if (/(fuck|scheiß|verdammt|idiot|digga|rotze|garbage|shit)/u.test(text)) {
+    userStyle = "aggressive";
+  } else if (/(schnell|now|sofort|asap|hurry|beeil)/u.test(text)) {
+    userStyle = "impatient";
+  } else if (/(haha|lol|lmao|geil|nice|cool|\^\^|:d)/u.test(text)) {
+    userStyle = "cheerful";
+  } else if (/(glaubst du|denkst du|warum|wieso|philosoph|sinn)/u.test(text)) {
+    userStyle = "thoughtful";
+  }
+
   if (/(code|bug|error|typescript|javascript|python|sql|patch)/u.test(text)) {
-    return Object.freeze({ intent: "code", nextAction: "propose_patch" });
+    return Object.freeze({ intent: "code", nextAction: "propose_patch", userStyle });
   }
   if (/(summarize|summary|zusammenfass|tl;dr|tldr)/u.test(text)) {
-    return Object.freeze({ intent: "summary", nextAction: "summarize" });
+    return Object.freeze({ intent: "summary", nextAction: "summarize", userStyle });
   }
   if (/(analy|compare|bewert|audit|review)/u.test(text)) {
-    return Object.freeze({ intent: "analysis", nextAction: "explain" });
+    return Object.freeze({ intent: "analysis", nextAction: "explain", userStyle });
   }
-  return Object.freeze({ intent: "question", nextAction: "answer" });
+  return Object.freeze({ intent: "question", nextAction: "answer", userStyle });
 }
 
+/**
+ * Constructs the prompt bundle used by the orchestrator for a single turn.
+ *
+ * The returned bundle contains a ready-to-send `prompt` string (including a system instruction, a `PLAN:` line with `intent`, `next_action`, and `user_style`, a `USER:` line, a `HISTORY` block, and a `MEMORY` block), a deterministic `memorySummary`, and the computed `runtimePlan`.
+ *
+ * @param input - The raw orchestration input containing `userText`, `history`, and `memoryContext`; the function normalizes this input before building the bundle.
+ * @returns An immutable PromptBundle with `prompt` (string), `memorySummary` (string), and `runtimePlan` (object including `intent`, `nextAction`, and `userStyle`).
+ */
 function buildPrompt(input: OrchestrateTurnInput): PromptBundle {
   const normalized = normalizeInput(input);
   const historyBlock = normalized.history.length
@@ -172,8 +199,8 @@ function buildPrompt(input: OrchestrateTurnInput): PromptBundle {
   const memorySummary = summarizeMemory(normalized.memoryContext);
   const runtimePlan = buildRuntimePlan(normalized);
   const prompt = [
-    "SYSTEM: Produce a concise, valid assistant response.",
-    `PLAN: intent=${runtimePlan.intent} next_action=${runtimePlan.nextAction}`,
+    "SYSTEM: Produce a concise, valid assistant response. Your name is Shinon. Adapt your tone to mirror the user's sentiment as scored below.",
+    `PLAN: intent=${runtimePlan.intent} next_action=${runtimePlan.nextAction} user_style=${runtimePlan.userStyle}`,
     `USER: ${normalized.userText}`,
     historyBlock,
     memorySummary.length > 0 ? `MEMORY: ${memorySummary}` : "MEMORY: <empty>",

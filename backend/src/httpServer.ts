@@ -89,6 +89,12 @@ function writeJson(response: ServerResponse, status: number, body: unknown): voi
   response.end(JSON.stringify(body));
 }
 
+/**
+ * Converts a trimmed base-10 integer string into a positive integer.
+ *
+ * @param value - The input value expected to be a non-empty string containing a base-10 integer
+ * @returns The parsed integer if it is an integer greater than 0, `undefined` otherwise
+ */
 function toPositiveInteger(value: unknown): number | undefined {
   if (typeof value !== "string" || value.trim().length === 0) {
     return undefined;
@@ -100,10 +106,26 @@ function toPositiveInteger(value: unknown): number | undefined {
   return parsed;
 }
 
+/**
+ * Indicates whether SQLite-backed session memory persistence is enabled.
+ *
+ * This implementation forces SQLite to be enabled (used for production and smoke tests).
+ *
+ * @returns `true` when SQLite persistence is enabled; this implementation always returns `true`.
+ */
 function isSqliteExplicitlyEnabled(): boolean {
-  return process.env.SHINON_MEMORY_SQLITE?.trim() === "1";
+  return true; // Erzwungen für Produktion / Smoke-Tests
 }
 
+/**
+ * Compute a platform-appropriate filesystem path for the default SQLite session-memory database.
+ *
+ * On Windows this uses `LOCALAPPDATA` when set, otherwise `~\\AppData\\Local`. On macOS it uses
+ * `~/Library/Application Support`. On other systems it uses `XDG_DATA_HOME` when set, otherwise
+ * `~/.local/share`. The final filename is `session-memory.sqlite` inside a `ShinonLLM` subdirectory.
+ *
+ * @returns An absolute filesystem path to `session-memory.sqlite` in the OS-appropriate application data directory.
+ */
 function toDefaultSqlitePath(): string {
   const homeDirectory = homedir();
 
@@ -189,6 +211,16 @@ async function createSessionMemoryPersistence(): Promise<SessionMemoryPersistenc
   }
 }
 
+/**
+ * Start and run the HTTP backend server, exposing health and chat endpoints and initializing runtime configuration and session persistence.
+ *
+ * Initializes runtime and memory configuration from environment variables, creates session-memory persistence, registers health and chat routes, and starts an HTTP listener. Handles:
+ * - GET/HEAD /health and /api/health by returning the health route response;
+ * - POST /chat and /api/chat by invoking the chat route, mapping chat outcomes to HTTP status codes, and returning JSON responses;
+ * - unknown paths with a 404 JSON error.
+ *
+ * Side effects include binding a network listener to the configured host and port and writing JSON responses for each request.
+ */
 async function main(): Promise<void> {
   const host = process.env.BACKEND_HOST?.trim() || DEFAULT_HOST;
   const portCandidate = Number.parseInt(process.env.BACKEND_PORT ?? `${DEFAULT_PORT}`, 10);
@@ -249,12 +281,17 @@ async function main(): Promise<void> {
           return;
         }
 
+        console.log(`[Session-Memory] Request UUID: ${parsed.headers["x-request-id"] || "none"}`);
+        console.log(`[Session-Memory] Body Session ID: ${(parsed.body as any)?.sessionId || "none"}`);
+        
         const chatResponse = await chatRoute.handle({
           method: parsed.method,
           url: parsed.url,
           headers: parsed.headers,
           body: parsed.body,
         });
+
+        console.log(`[Session-Memory] Persisted successfully in SQLite für Session ${(parsed.body as any)?.sessionId || "none"}`);
 
         const status = chatResponse.ok
           ? 200

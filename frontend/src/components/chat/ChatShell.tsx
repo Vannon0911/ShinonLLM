@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
+import { Orb, OrbMood } from "./Orb";
 
 type ChatRole = "user" | "assistant";
 type ChatModel = "runtime-default" | "llamacpp-qwen-0_5b" | "ollama-default";
@@ -258,6 +259,20 @@ function Composer(props: {
   );
 }
 
+/**
+ * Render a chat UI that manages composing, sending, and displaying messages with model selection and simple mood-driven UI.
+ *
+ * The component maintains local chat state (messages, draft, model, sending state, error, and an Orb mood derived from the draft),
+ * validates and submits user messages to the configured chat API, appends user and assistant messages to the history,
+ * and reports lifecycle events via `onEvent`.
+ *
+ * @param sessionId - Optional session identifier to include in request payloads
+ * @param conversationId - Optional conversation identifier to include in request payloads
+ * @param initialMessages - Initial list of chat messages to populate the history
+ * @param apiBasePath - Base path for the chat API endpoint (default: "/api/chat")
+ * @param onEvent - Optional callback invoked with `"submit"`, `"success"`, and `"error"` events describing request lifecycle
+ * @returns A React element rendering the chat shell UI
+ */
 export function ChatShell({
   sessionId,
   conversationId,
@@ -270,6 +285,23 @@ export function ChatShell({
   const [model, setModel] = useState<ChatModel>("runtime-default");
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<ChatUIError | null>(null);
+  const [currentMood, setCurrentMood] = useState<OrbMood>("neutral");
+
+  // Sehr simpler Live-Sentiment-Check auf dem Draft, damit der Orb sofort reagiert
+  useEffect(() => {
+    const text = draft.toLowerCase();
+    if (/(fuck|scheiß|verdammt|idiot|digga|rotze|garbage|shit)/u.test(text)) {
+      setCurrentMood("aggressive");
+    } else if (/(schnell|now|sofort|asap|hurry|beeil)/u.test(text)) {
+      setCurrentMood("impatient");
+    } else if (/(haha|lol|lmao|geil|nice|cool|\^\^|:d)/u.test(text)) {
+      setCurrentMood("cheerful");
+    } else if (/(glaubst du|denkst du|warum|wieso|philosoph|sinn)/u.test(text)) {
+      setCurrentMood("thoughtful");
+    } else if (draft.length === 0) {
+      setCurrentMood("neutral");
+    }
+  }, [draft]);
 
   const canSend = useMemo(() => normalizeText(draft).length > 0 && !isSending, [draft, isSending]);
 
@@ -287,6 +319,16 @@ export function ChatShell({
       const nextError: ChatUIError = {
         code: "EMPTY_MESSAGE",
         message: "Message must not be empty.",
+      };
+      setError(nextError);
+      emit({ type: "error", error: nextError });
+      return;
+    }
+
+    if (normalizedText.length > 25000) {
+      const nextError: ChatUIError = {
+        code: "REQUEST_FAILED",
+        message: "Message too long. Komm mal runter, Digga. Max 25000 Zeichen.",
       };
       setError(nextError);
       emit({ type: "error", error: nextError });
@@ -357,9 +399,11 @@ export function ChatShell({
   return (
     <section className="chat-shell" aria-busy={isSending}>
       <header className="chat-shell__header">
-        <h2>Chat</h2>
-        <p>{isSending ? "Sending..." : "Ready."}</p>
+        <h2>Chat mit Shinon</h2>
+        <p>{isSending ? "Denkt nach..." : "Bereit."}</p>
       </header>
+      
+      <Orb isThinking={isSending} mood={currentMood} />
 
       {error ? (
         <div aria-live="polite" className="chat-shell__error" role="alert">

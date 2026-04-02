@@ -21,6 +21,11 @@ function normalizeOrigin(value) {
   }
 }
 
+/**
+ * Builds security HTTP headers, including a Content-Security-Policy that incorporates the provided backend origin.
+ * @param {string} backendOrigin - The backend origin (e.g., "https://api.example.com") to allow in `connect-src` and its WebSocket equivalent.
+ * @returns {Array<{key: string, value: string}>} An array of header objects suitable for use in Next.js `headers()`; the CSP restricts sources for scripts, styles, images, forms, frames, base URI, and connection targets (including the backend origin and its ws/wss equivalent).
+ */
 function buildSecurityHeaders(backendOrigin) {
   const connectSources = [
     "'self'",
@@ -37,7 +42,7 @@ function buildSecurityHeaders(backendOrigin) {
         "frame-ancestors 'none'",
         "form-action 'self'",
         "img-src 'self' data: blob:",
-        "script-src 'self' 'unsafe-inline'",
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
         "style-src 'self' 'unsafe-inline'",
         `connect-src ${connectSources.join(" ")}`,
       ].join("; "),
