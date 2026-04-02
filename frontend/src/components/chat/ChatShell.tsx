@@ -259,6 +259,20 @@ function Composer(props: {
   );
 }
 
+/**
+ * Render a chat UI that manages composing, sending, and displaying messages with model selection and simple mood-driven UI.
+ *
+ * The component maintains local chat state (messages, draft, model, sending state, error, and an Orb mood derived from the draft),
+ * validates and submits user messages to the configured chat API, appends user and assistant messages to the history,
+ * and reports lifecycle events via `onEvent`.
+ *
+ * @param sessionId - Optional session identifier to include in request payloads
+ * @param conversationId - Optional conversation identifier to include in request payloads
+ * @param initialMessages - Initial list of chat messages to populate the history
+ * @param apiBasePath - Base path for the chat API endpoint (default: "/api/chat")
+ * @param onEvent - Optional callback invoked with `"submit"`, `"success"`, and `"error"` events describing request lifecycle
+ * @returns A React element rendering the chat shell UI
+ */
 export function ChatShell({
   sessionId,
   conversationId,

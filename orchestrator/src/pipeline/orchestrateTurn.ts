@@ -149,6 +149,12 @@ function summarizeMemory(memoryContext: Readonly<Record<string, unknown>>): stri
   return entries.join(" | ");
 }
 
+/**
+ * Derives a runtime plan (intent, nextAction, and userStyle) from the user's text and conversation history.
+ *
+ * @param input - The orchestrate turn input whose `userText` and `history` are analyzed to infer intent and user tone.
+ * @returns The chosen runtime plan: an object with `intent` (`"code" | "summary" | "analysis" | "question"`), `nextAction` (`"propose_patch" | "summarize" | "explain" | "answer"`), and `userStyle` (`"neutral" | "aggressive" | "cheerful" | "impatient" | "thoughtful"`).
+ */
 function buildRuntimePlan(input: OrchestrateTurnInput): PromptBundle["runtimePlan"] {
   const text = `${input.userText} ${input.history.map((entry) => entry.content).join(" ")}`.toLowerCase();
   
@@ -175,6 +181,14 @@ function buildRuntimePlan(input: OrchestrateTurnInput): PromptBundle["runtimePla
   return Object.freeze({ intent: "question", nextAction: "answer", userStyle });
 }
 
+/**
+ * Constructs the prompt bundle used by the orchestrator for a single turn.
+ *
+ * The returned bundle contains a ready-to-send `prompt` string (including a system instruction, a `PLAN:` line with `intent`, `next_action`, and `user_style`, a `USER:` line, a `HISTORY` block, and a `MEMORY` block), a deterministic `memorySummary`, and the computed `runtimePlan`.
+ *
+ * @param input - The raw orchestration input containing `userText`, `history`, and `memoryContext`; the function normalizes this input before building the bundle.
+ * @returns An immutable PromptBundle with `prompt` (string), `memorySummary` (string), and `runtimePlan` (object including `intent`, `nextAction`, and `userStyle`).
+ */
 function buildPrompt(input: OrchestrateTurnInput): PromptBundle {
   const normalized = normalizeInput(input);
   const historyBlock = normalized.history.length

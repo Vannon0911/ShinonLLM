@@ -321,6 +321,13 @@ function ensureSqliteSchema(adapter: SessionMemorySqliteAdapter): void {
   failClosed(`sqlite schema version ${currentVersion} is unknown`);
 }
 
+/**
+ * Constructs a SQLite-backed SessionMemoryPersistence implementation.
+ *
+ * @param adapter - SQLite adapter providing `run(sql, params?)` and `all(sql, params?)` for executing queries.
+ * @returns A persistence object that implements `load`, `append`, `decay`, and `getConceptFrequencies`, storing session memory entries in a SQLite table.
+ * @throws If `adapter` is not a plain object with `run` and `all` functions, or if schema creation/verification fails.
+ */
 export function createSqliteSessionMemoryPersistence(
   adapter: SessionMemorySqliteAdapter,
 ): SessionMemoryPersistence {

@@ -4,6 +4,16 @@ import React from "react";
 
 export type OrbMood = "neutral" | "aggressive" | "cheerful" | "thoughtful" | "impatient";
 
+/**
+ * Render a small animated orb whose color and animation reflect the component's mood and thinking state.
+ *
+ * The orb's color is derived from `mood`, and the container toggles between a slower "breathe" animation when idle
+ * and a faster "pulse" animation when thinking.
+ *
+ * @param isThinking - If true, use the "thinking" animation and a stronger glow; otherwise use the idle animation.
+ * @param mood - Visual mood of the orb; affects the orb's color (one of "neutral", "aggressive", "cheerful", "thoughtful", "impatient").
+ * @returns A JSX element containing the orb and its scoped styles.
+ */
 export function Orb({ isThinking = false, mood = "neutral" }: { isThinking?: boolean; mood?: OrbMood }) {
   // Determine color based on UserStyle / sentiment
   let color = "rgba(100, 200, 255, 0.8)"; // neutral blue
