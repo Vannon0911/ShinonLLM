@@ -1,147 +1,203 @@
 # ShinonLLM
 
-**Vision:** The runtime thinks. The LLM formulates text.
+![ShinonLLM](./docs/assets/banner.png)
 
-Release: **0.2.3** (root/backend/frontend packages: `0.2.3`)
+**Die Runtime denkt. Das LLM formuliert Text.**
 
-[![CI](https://github.com/<OWNER>/<REPO>/actions/workflows/ci.yml/badge.svg)](https://github.com/<OWNER>/<REPO>/actions/workflows/ci.yml)
+Release: **0.2.3** · [Changelog](./CHANGELOG.md) · [Apache-2.0](./LICENSE)
 
-![ShinonLLM Runtime Overview](./docs/assets/runtime-overview.svg)
+---
 
-## What It Is
+## Das Problem
 
-ShinonLLM is a runtime-first, local-first LLM system where **the runtime owns decisions** (contracts, routing, memory writes, scoring) and the **model is constrained to text formulation**.
-The outcome is a system that behaves like a product runtime, not like an improvised prompt stack.
+Jeder kennt es: Du installierst einen AI-Chatbot, er ist am Anfang beeindruckend – und nach drei Tagen hast du das Gefühl, mit einem Fremden zu reden, der sich an nichts erinnert.
 
-## Goals
+![Problem vs. Lösung](./docs/assets/problem-vs-solution.png)
 
-- Deterministic behavior that can be verified (and blocked) by gates.
-- Explicit memory lifecycle (typed entries, scoring, decay) instead of raw chat logs.
-- Auditable change surfaces (contracts, replay, baseline integrity) that keep releases reproducible.
-
-## Who It Is For
-
-- Builders who want a local-first assistant runtime with predictable behavior.
-- Teams who need contracts, replayability, and "release gates" instead of prompt folklore.
-- Anyone who treats memory writes as a controlled interface, not as a vibe.
-
-## Non-goals
-
-- A "prompt collection" repo.
-- An agent that can silently mutate state because the prompt felt like it.
-- A hosted SaaS product (this repo is local-first by default).
-
-## Unique Selling Points (USPs)
-
-- **Runtime-owned decisions:** policy, scoring, memory writes, and gates are enforced in code (fail-closed), not in model prose.
-- **Contract-first orchestration:** schema validation is part of the runtime pipeline, not an afterthought.
-- **Determinism as a release condition:** replay/contract/baseline gates are treated as release handshakes, not optional tests.
-- **Frontend as delivery surface:** UI delivers interaction; it does not own decision logic.
-
-## ShinonLLM vs Typical Companion Stacks
-
-| Dimension | ShinonLLM | Typical companion stacks |
+| | Typische AI-Produkte | ShinonLLM |
 |---|---|---|
-| Who "decides" | Runtime code decides; model formats text | Model/prompt decides (often implicitly) |
-| Memory | Typed, scored entries with explicit write-gates | Chat logs + ad-hoc summaries |
-| Determinism | Replay/contract/baseline gates are first-class | Best-effort, hard to reproduce |
-| Auditability | Contracts + verification artifacts | "Seems fine" until it drifts |
-| Failure mode | Fail-closed on invalid writes / schema breaks | Silent drift, hidden state mutation |
-| Product surface | Frontend is delivery only | UI + agent logic often mixed |
-| Releases | SemVer + changelog + tag-driven GitHub releases | Ad-hoc versioning (or none) |
+| **Wer entscheidet** | Das Modell (via Prompt) | Die Runtime (Code-Logik) |
+| **Erinnerung** | Chat-Logs, die irgendwann verschwinden | Persistentes Scoring nach Häufigkeit & Impact |
+| **Personalisierung** | "Stell dir vor, du bist..." | Echte Muster-Erkennung über die Zeit |
+| **Kontrolle** | Prompt-Hoffnung | Fail-closed Gates & Contracts |
+| **Deine Daten** | Cloud-Server eines Fremden | 100% lokal auf deiner Hardware |
+| **Modell-Größe** | GPT-4, Claude, 70B+ | Kleine Modelle (0.5B–7B), getestet & optimiert |
 
-## How It Works (High Level)
+---
 
-Request path (synchronous, user-visible):
+## Was ist ShinonLLM?
 
-- `User -> frontend -> backend -> orchestrator -> inference -> backend -> frontend -> User`
+ShinonLLM ist ein **lokal-erstes AI-System**, das aus deiner Nutzung lernt – ohne deine Daten jemals irgendwohin zu schicken.
 
-State path (runtime-internal, controlled writes):
+> **Kein Wrapper. Kein API-Proxy. Eine eigenständige Runtime.**
 
-- `orchestrator/inference -> memory` for session updates and decay handling.
+### Die drei Säulen
 
-Quality path (verification, not in hot response path):
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    🧠 Runtime (Entscheider)                 │
+│  ┌──────────┐  ┌───────────┐  ┌──────────┐  ┌───────────┐  │
+│  │ Contracts│→ │Orchestrator│→ │ Scoring  │→ │  Memory   │  │
+│  │(Eingabe- │  │(Pipeline- │  │(Relevanz,│  │(Persistenz│  │
+│  │ prüfung) │  │ steuerung)│  │ Frequenz,│  │ + Decay)  │  │
+│  └──────────┘  └───────────┘  │ Impact)  │  └───────────┘  │
+│                               └──────────┘                  │
+├─────────────────────────────────────────────────────────────┤
+│                    💬 LLM (Textformulierung)                │
+│         Kleine, lokale Modelle – kein Cloud-Zwang           │
+│              llama.cpp · Qwen · Ollama                      │
+└─────────────────────────────────────────────────────────────┘
+```
 
-- `tests/gates` validate determinism and baseline integrity before releases.
+### Wie es funktioniert
 
-## Current State (0.2.3)
+```mermaid
+graph LR
+    A[👤 User Input] --> B[🔒 Contract Validation]
+    B --> C[🧠 Orchestrator]
+    C --> D[📊 Context Scoring]
+    D --> E[💾 Memory Retrieval]
+    E --> F[⚡ Inference Engine]
+    F --> G[✍️ LLM Output]
+    G --> H[📝 Memory Write Gate]
+    H --> I[🗄️ Persistent Storage]
+    
+    style A fill:#4d9fff,color:#fff
+    style C fill:#9333ea,color:#fff
+    style F fill:#06b6d4,color:#fff
+    style I fill:#f59e0b,color:#fff
+```
 
-- Runtime entry and validation are active.
-- Contract-first orchestration is active.
-- Inference routing includes mandatory offline evaluator evidence in the live path.
-- Session memory path with decay exists.
+---
 
-Current verified handshake:
+## MVP-Scope vs. Langzeit-Vision
 
-- [docs/HANDSHAKE_CURRENT_STATE.md](./docs/HANDSHAKE_CURRENT_STATE.md)
+### 🎯 MVP (Aktueller Fokus)
 
-## Quickstart (Local Verification Baseline)
+Ein lokales AI-Modell, das **persistent vom Nutzer lernt** mit zwei Modi:
 
-Mandatory local checks:
+| Feature | Status | Beschreibung |
+|---|:---:|---|
+| Lokal-First Runtime | ✅ | Läuft auf deiner Hardware, keine Cloud |
+| Kleine Modelle (0.5B–7B) | ✅ | llama.cpp mit Qwen 0.5B verifiziert |
+| Session Memory + Persistence | ✅ | SQLite-Backend, TTL, Decay |
+| Scoring Engine | ✅ | Relevanz × 0.7 + Intent × 0.2 + Recency × 0.05 |
+| Token-Budget Management | ✅ | Bounded Context mit Token-Limits |
+| Pattern-Analyse (Häufigkeit) | 🔧 | Token-Overlap Scoring existiert, Frequenz-Tracking geplant |
+| Impact/Zeit-Scoring | 🔧 | Recency-Score existiert, Impact-Gewichtung geplant |
+| Drift-Schutz | 📋 | Contract-Gates + Replay existieren, aber kein "Persona-Drift-Detection"-Modus |
+| Frontend Chat UI | ✅ | Next.js, dark-themed, funktional |
+
+### 🔭 Langzeit-Vision
+
+| Feature | Scope | Beschreibung |
+|---|---|---|
+| **Real Persona** | Produkt | Nicht ein weiterer Wrapper – eine AI die dich *kennt* |
+| **Developer IDE Integration** | Langzeit | In-Editor AI-Assistent mit Kontext aus dem laufenden Projekt |
+| **Muster-Erkennung** | Produkt | Pattern-Analyse nach Häufigkeit und Impact, kein Raw-Data-Dump |
+| **Multi-Modell Evaluation** | Intern | Welches kleine Modell liefert die besten Ergebnisse? Intern getestet |
+| **Kontext-Token-Speicherung** | Produkt | Runtime verwaltet Tokens, nicht das Modell |
+
+---
+
+## Architektur
+
+![Architektur](./docs/assets/architecture.png)
+
+### Module
+
+| Modul | Files | Zweck |
+|---|:---:|---|
+| `backend/` | 7 | HTTP-Server, Routing, Validation |
+| `orchestrator/` | 7 | Pipeline-Steuerung, Contracts |
+| `inference/` | 6 | Modell-Adapter (llama.cpp, Ollama), Retry |
+| `memory/` | 5 | Session + Longterm Storage, Scoring, Retrieval |
+| `frontend/` | 10 | Next.js Chat-UI |
+| `tests/` | 9 | Gates, Unit, Integration, E2E |
+| `shared/` | 4 | Utils (Hashing, Serialization) |
+| `telemetry/` | 4 | Event + Replay Support |
+| **Gesamt** | **52** | **TypeScript Source Files** |
+
+### Scoring-Formel
+
+Die Runtime bewertet Kontext-Einträge deterministisch nach:
+
+```
+score = relevance × 0.70        (Token-Overlap: User-Query vs. Entry)
+      + intentMatch × 0.20      (Binär: mindestens 1 Token Match)
+      + recency × 0.05          (Zeitstempel-Gewichtung)
+      + structural × 0.05       (Hat ID/Type-Metadaten)
+      + positionBonus × 0.01    (Index-Penalty: 1/(i+1))
+```
+
+> **Kein Raw-Data-Dump.** Die Runtime entscheidet was relevant ist – basierend auf messbaren Scores, nicht auf Prompt-Hoffnung.
+
+### Test-Gates (Release-Qualität)
+
+| Gate | Typ | Prüft |
+|---|---|---|
+| `contract-gate` | Gate | Schema-Konformität aller Contracts |
+| `replay-gate` | Gate | Determinismus: gleicher Input → gleicher Output |
+| `baseline-integrity` | Gate | Baseline-Hash-Konsistenz |
+| `orchestrator` | Unit | Pipeline-Logik |
+| `router` | Unit | Inference-Routing |
+| `session-persistence` | Unit | Memory Persist/Load/Decay |
+| `fallback` | Integration | Failover-Verhalten |
+| `chat-flow` | Integration | End-to-End Chat-Pipeline |
+| `chat-ui` | E2E | Frontend-Interaktion |
+
+---
+
+## Quickstart
 
 ```powershell
+# Dependencies installieren
 npm ci
 npm --prefix frontend ci
-npm run test:determinism
+
+# Verification-Suite
 npm run verify:backend
 npm --prefix frontend run build
-```
 
-Optional local run:
-
-```powershell
+# Lokal starten
 npm run start:local
-```
 
-Stop local run:
-
-```powershell
+# Stoppen
 npm run stop:local
 ```
 
-## Repository Map
+---
 
-- `backend/` - runtime entry, HTTP routes, validation
-- `orchestrator/` - runtime contracts and turn orchestration
-- `inference/` - adapter and routing layer for model execution
-- `memory/` - session/long-term memory primitives
-- `telemetry/` - event and replay support
-- `frontend/` - user-facing delivery interface
-- `tests/` - unit, integration, e2e, and gate checks
-- `docs/` - canonical project documentation
+## Warum "Shinon"?
+
+Die meisten AI-Produkte sind glänzende Oberflächen über Cloud-APIs. Du schickst deine Daten weg und hoffst, dass das Modell sich an dich erinnert. Tut es nicht.
+
+**ShinonLLM dreht das um:**
+
+- 🏠 **Lokal:** Deine Daten bleiben auf deiner Maschine
+- 🧠 **Persistent:** Die Runtime lernt von dir, über Sessions hinweg
+- 📊 **Scoring statt Raten:** Kontext-Auswahl basiert auf echten Metriken, nicht auf Prompt-Tricks
+- 🔒 **Kontrolliert:** Fail-closed Gates, Contract-Validation, deterministische Pipelines
+- 🪶 **Klein:** Optimiert für 0.5B–7B Modelle die auf Consumer-Hardware laufen
+
+---
 
 ## Documentation
 
-Start here:
+- [docs/README.md](./docs/README.md) – Docs Navigation Hub
+- [docs/ARCHITECTURE_OVERVIEW.md](./docs/ARCHITECTURE_OVERVIEW.md) – Architektur-Deep-Dive
+- [docs/MEMORY_POLICY.md](./docs/MEMORY_POLICY.md) – Memory Policy (SQLite, TTL, Decay)
+- [docs/HANDSHAKE_CURRENT_STATE.md](./docs/HANDSHAKE_CURRENT_STATE.md) – Aktueller Handshake-Stand
+- [docs/TODO.md](./docs/TODO.md) – Priorisierter Backlog
 
-- [docs/README.md](./docs/README.md)
+## Contributing & Security
 
-Core documents:
+- [CONTRIBUTING.md](./CONTRIBUTING.md)
+- [SECURITY.md](./SECURITY.md)
 
-- [docs/HANDSHAKE_CURRENT_STATE.md](./docs/HANDSHAKE_CURRENT_STATE.md)
-- [docs/ARCHITECTURE_OVERVIEW.md](./docs/ARCHITECTURE_OVERVIEW.md)
-- [docs/DETERMINISTISCHES_LLM_RUNTIME_KONZEPT.md](./docs/DETERMINISTISCHES_LLM_RUNTIME_KONZEPT.md)
-- [docs/TODO.md](./docs/TODO.md)
+## Source of Truth
 
-Release governance:
-
-- [docs/releases/VERSIONING.md](./docs/releases/VERSIONING.md)
-- [docs/releases/RELEASE_PROCESS.md](./docs/releases/RELEASE_PROCESS.md)
-- [CHANGELOG.md](./CHANGELOG.md)
-
-## Contributing and Security
-
-- Contribution rules: [CONTRIBUTING.md](./CONTRIBUTING.md)
-- Security policy: [SECURITY.md](./SECURITY.md)
-- License: [Apache-2.0](./LICENSE)
-
-## Source of Truth Notice
-
-`README.md` is a presentation and orientation layer.
-It is explicitly **not** the source of truth.
-
-Authoritative references:
+`README.md` ist Präsentations-Layer, nicht Source of Truth. Autoritative Referenzen:
 
 - [LLM_ENTRY.md](./LLM_ENTRY.md)
-- [docs/LLM_ENTRY_CONFORMITY.md](./docs/LLM_ENTRY_CONFORMITY.md)
 - [docs/HANDSHAKE_CURRENT_STATE.md](./docs/HANDSHAKE_CURRENT_STATE.md)

@@ -1,19 +1,39 @@
-# TODO - Runtime-First Alignment
+# TODO - ShinonLLM Roadmap
 
-- Date: 2026-04-02
-- Goal: "Die Runtime denkt, das LLM formuliert Text."
+- Date: 2026-04-03
+- Vision: "Die Runtime denkt, das LLM formuliert Text."
 
-## P0 (critical)
-- [X] Make gate scripts fully repo-self-contained (no external required paths).
-- [X] Align memory policy docs with current code-level behavior in one place only.
-- [X] Finalize local artifact cleanup automation for locked `.next` folders.
+## MVP Scope (Current Focus)
 
-## P1 (important)
-- [X] Integrate E2E explicitly into the default verify flow or document it as intentionally optional.
-- [X] Harden SQLite target runtime path and migration story.
-- [ ] Add CI status badges to README (ready, needs `<OWNER>/<REPO>` slug replacement).
+- [X] Local-first runtime with llama.cpp inference
+- [X] Session memory with SQLite persistence support
+- [X] Scoring engine (relevance + intent + recency)
+- [X] Contract-first orchestration pipeline
+- [X] Frontend chat UI (Next.js)
+- [X] Test gates (contract, replay, baseline integrity)
+- [ ] Activate session memory in frontend (pass sessionId/conversationId)
+- [ ] Frequency-based pattern tracking (count concept recurrence across sessions)
+- [ ] Impact/time-weighted scoring (no raw data dump)
+- [ ] Drift protection mode (detect persona divergence across conversations)
+- [ ] Internal model evaluation (benchmark Qwen 0.5B vs 1.5B vs 3B vs 7B)
+- [ ] System prompt for stable model identity
 
-## P2 (quality)
-- [ ] Decide final licensing (current `LICENSE` is a conservative "all rights reserved" placeholder).
-- [X] Extend operator docs with concrete failure-mode playbooks.
-- [X] Add release smoke-check script output snapshots to release notes template.
+## Product Scope (Near-term)
+
+- [ ] Real Persona: persistent personality that learns from the user
+- [ ] Context token storage on runtime (pattern analysis, not chat-log hoarding)
+- [ ] Multi-session learning (cross-conversation knowledge transfer)
+- [ ] Muster-Erkennung: automated pattern detection by frequency and impact
+
+## Long-term Vision
+
+- [ ] Developer IDE integration
+- [ ] Multi-model routing based on internal benchmarks
+- [ ] Federated memory (sync across devices, still local-first)
+
+## Infrastructure
+
+- [X] CI workflow + release workflow
+- [X] GitHub issue/PR templates + Dependabot
+- [ ] CI status badges in README
+- [ ] Final licensing decision
