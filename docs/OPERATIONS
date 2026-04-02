@@ -1,0 +1,61 @@
+export type OperationsContractInput = Readonly<{
+  implementedContracts: ReadonlyArray<string>;
+  behavior: ReadonlyArray<string>;
+}>;
+
+export type OperationsContractOutput = Readonly<{
+  title: string;
+  localStart: ReadonlyArray<string>;
+  gateCheck: ReadonlyArray<string>;
+  recovery: ReadonlyArray<string>;
+  notes: ReadonlyArray<string>;
+}>;
+
+function readList(values: ReadonlyArray<string>, label: string): ReadonlyArray<string> {
+  if (!Array.isArray(values)) {
+    throw new Error(`Invalid ${label}: expected array`);
+  }
+
+  const normalized = values.map((value) => {
+    if (typeof value !== "string" || value.trim() === "") {
+      throw new Error(`Invalid ${label}: empty entry`);
+    }
+    return value.trim();
+  });
+
+  return Object.freeze(normalized);
+}
+
+export function OPERATIONSMain(input: OperationsContractInput): OperationsContractOutput {
+  if (input == null || typeof input !== "object" || Array.isArray(input)) {
+    throw new Error("Invalid input: implemented contracts and behavior are required");
+  }
+
+  const implementedContracts = readList(input.implementedContracts, "implementedContracts");
+  const behavior = readList(input.behavior, "behavior");
+
+  return {
+    title: "Operations contract for local start, gate checks, and recovery",
+    localStart: Object.freeze([
+      "Use ops/scripts/run-local.ps1 as the local start contract.",
+      "Start the runtime only after implemented contracts are present.",
+      "Expose the exact behavior listed in the blueprint without extra scope.",
+    ]),
+    gateCheck: Object.freeze([
+      "Use ops/scripts/check-gates.ps1 as the gate contract.",
+      "Run the declared gate for this blueprint before release.",
+      "Treat any gate failure as a hard stop.",
+    ]),
+    recovery: Object.freeze([
+      "Stop the runtime on contract mismatch.",
+      "Rebuild only the declared target path.",
+      "Re-run the gate after every correction until PASS is reproduced.",
+    ]),
+    notes: Object.freeze([
+      `implementedContracts: ${implementedContracts.join(", ")}`,
+      `behavior: ${behavior.join(", ")}`,
+      "Error policy: fail closed, no ambiguous normative language.",
+      "Output policy: exact operational and specification guidance only.",
+    ]),
+  };
+}

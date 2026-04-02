@@ -1,0 +1,9 @@
+export function ARCHITECTUREMain(implementedContracts, behavior) {
+  return {
+    input: "implemented contracts and behavior",
+    output: "exact operational/spec guidance",
+    error: "no ambiguous normative language",
+    contracts: implementedContracts,
+    behavior,
+  };
+}

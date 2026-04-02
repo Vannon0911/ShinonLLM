@@ -1,0 +1,16 @@
+{
+  "name": "llmrab-runtime",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "test:determinism": "node --import tsx ./tests/gates/replay-gate.spec.ts",
+    "test:gates": "node --import tsx ./tests/gates/contract-gate.spec.ts && node --import tsx ./tests/gates/replay-gate.spec.ts",
+    "test:backend": "node --import tsx ./tests/unit/orchestrator.spec.ts && node --import tsx ./tests/unit/router.spec.ts && node --import tsx ./tests/integration/fallback.spec.ts && node --import tsx ./tests/integration/chat-flow.spec.ts",
+    "verify:backend": "node --import tsx ./tests/gates/contract-gate.spec.ts && node --import tsx ./tests/gates/replay-gate.spec.ts && node --import tsx ./tests/unit/orchestrator.spec.ts && node --import tsx ./tests/unit/router.spec.ts && node --import tsx ./tests/integration/fallback.spec.ts && node --import tsx ./tests/integration/chat-flow.spec.ts"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  }
+}
