@@ -11,6 +11,8 @@ build/
 .next/
 .turbo/
 coverage/
+ops/models/*.gguf
+ops/models/*.bin
 
 # Caches and temp files
 .cache/

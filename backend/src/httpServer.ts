@@ -100,7 +100,7 @@ async function main(): Promise<void> {
       const parsed = await toParsedRequest(request);
       const path = toPath(parsed.url);
 
-      if (path === "/health") {
+      if (path === "/health" || path === "/api/health") {
         const health = await healthRoute({
           method: parsed.method === "HEAD" ? "HEAD" : "GET",
           headers: parsed.headers,
@@ -110,7 +110,7 @@ async function main(): Promise<void> {
         return;
       }
 
-      if (path === "/chat") {
+      if (path === "/chat" || path === "/api/chat") {
         if (parsed.method !== "POST") {
           writeJson(response, 405, {
             ok: false,

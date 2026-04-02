@@ -1,3 +1,5 @@
+import { orchestrateTurn as defaultRuntimeOrchestrateTurn } from "../../../orchestrator/src/pipeline/orchestrateTurn.js";
+
 export type ChatRequestDto = {
   message?: string;
   text?: string;
@@ -343,13 +345,6 @@ function normalizeChatTurn(request: ChatRequestDto, memoryContext: Record<string
   };
 }
 
-function defaultOrchestrateTurn(input: NormalizedChatTurn): { reply: string; source: "fallback" } {
-  return {
-    reply: `Echo: ${input.userText}`,
-    source: "fallback",
-  };
-}
-
 function readRequestId(request: ChatRequestDto, userText: string, history: NormalizedChatTurn["history"]): string {
   if (isNonEmptyString(request.requestId)) {
     return request.requestId.trim();
@@ -418,9 +413,8 @@ async function executeChatRoute(
   const requestId = readRequestId(validatedRequest, normalized.userText, normalized.history);
 
   try {
-    const orchestratorResult = dependencies.orchestrateTurn
-      ? await dependencies.orchestrateTurn(normalized)
-      : defaultOrchestrateTurn(normalized);
+    const runOrchestrator = dependencies.orchestrateTurn ?? defaultRuntimeOrchestrateTurn;
+    const orchestratorResult = await runOrchestrator(normalized);
 
     const assistant = resolveAssistantText(orchestratorResult, normalized.userText);
     return buildSuccessResponse(normalized, assistant.text, requestId, assistant.source);
