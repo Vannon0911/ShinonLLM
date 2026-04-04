@@ -90,6 +90,7 @@ function buildFixtures(): RouterFixtures {
         fallbackBackend: "llamacpp",
         allowFallback: true,
         model: "  fallback-target  ",
+        stream: true,
         policyId: "  policy-beta  ",
         headers: Object.freeze({
           "x-trace-id": "  trace-123  ",

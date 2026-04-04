@@ -84,6 +84,7 @@ function buildFixtures(): RouterFixtures {
         fallbackBackend: "ollama",
         allowFallback: true,
         model: "  router-fallback  ",
+        stream: true,
         policyId: "  policy-alpha  ",
         headers: Object.freeze({
           "x-trace-id": "  trace-123  ",
