@@ -1,10 +1,13 @@
 import { routeBackendCall } from "../../../inference/src/router/backendRouter.js";
 import { extractPattern, type Pattern } from "../../../character/src/experience/patterns.js";
-import { queryTier1, queryTier2 } from "../../../character/src/experience/twoTierMemory.js";
-import { loadAttitudeState, applyAttitudeRules, shouldConfront, formatAttitudeForPrompt, getToneDirective, type AttitudeState } from "../../../character/src/attitudes/tracker.js";
-import { createHotZone } from "../../../memory/src/zones/hotZone.js";
-import { createMidZone } from "../../../memory/src/zones/midZone.js";
-import { createColdZone } from "../../../memory/src/zones/coldZone.js";
+import { 
+  queryTier1, 
+  queryTier2 
+} from "../../../character/src/experience/twoTierMemory.js";
+import { 
+  getUserAttitudes, 
+  updateAttitude 
+} from "../../../memory/src/adapters/sqliteAdapter.js";
 
 export type ChatRole = "system" | "user" | "assistant";
 
