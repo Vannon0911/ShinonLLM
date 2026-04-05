@@ -44,7 +44,7 @@ export type SessionMemorySqliteAdapter = Readonly<{
 
 const DEFAULT_LIMIT = 64;
 const DEFAULT_KEEP_LATEST = 128;
-const SQLITE_SCHEMA_VERSION = 1;
+const SQLITE_SCHEMA_VERSION = 2;
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -253,26 +253,77 @@ export function createInMemorySessionMemoryPersistence(
   });
 }
 
-function createSqliteSchemaV1(adapter: SessionMemorySqliteAdapter): void {
+function createSqliteSchemaV2(adapter: SessionMemorySqliteAdapter): void {
+  // Personal Facts (Tier 1) - konkrete Ereignisse, Zitate, Präferenzen
   adapter.run(
     [
-      "CREATE TABLE IF NOT EXISTS session_memory_entries (",
+      "CREATE TABLE IF NOT EXISTS personal_facts (",
       "  id TEXT PRIMARY KEY,",
+      "  content TEXT NOT NULL,",
+      "  category TEXT NOT NULL,", // preference, event, commitment, relationship
       "  session_id TEXT NOT NULL,",
       "  conversation_id TEXT NOT NULL,",
-      "  role TEXT NOT NULL,",
-      "  content TEXT NOT NULL,",
       "  created_at TEXT NOT NULL,",
-      "  expires_at TEXT,",
+      "  zone TEXT DEFAULT 'hot',", // hot, mid, cold
+      "  relevance_score REAL DEFAULT 0.5,",
       "  metadata_json TEXT",
       ");",
     ].join("\n"),
   );
   adapter.run(
-    "CREATE INDEX IF NOT EXISTS idx_session_memory_scope ON session_memory_entries(session_id, conversation_id, created_at);",
+    "CREATE INDEX IF NOT EXISTS idx_personal_facts_session ON personal_facts(session_id, conversation_id, zone);",
   );
   adapter.run(
-    "CREATE INDEX IF NOT EXISTS idx_session_memory_expiry ON session_memory_entries(expires_at);",
+    "CREATE INDEX IF NOT EXISTS idx_personal_facts_score ON personal_facts(zone, relevance_score DESC);",
+  );
+
+  // Patterns (Tier 2) - generalisierte Muster mit Konfidenz
+  adapter.run(
+    [
+      "CREATE TABLE IF NOT EXISTS patterns (",
+      "  id TEXT PRIMARY KEY,",
+      "  anchor TEXT NOT NULL UNIQUE,", // z.B. "user-beziehung-anna"
+      "  type TEXT NOT NULL,", // preference, relationship
+      "  confidence REAL NOT NULL DEFAULT 0.0,",
+      "  examples_json TEXT NOT NULL,", // Array von {factId, content, date}
+      "  first_seen TEXT NOT NULL,",
+      "  last_reinforced TEXT NOT NULL,",
+      "  reinforcement_count INTEGER DEFAULT 1,",
+      "  metadata_json TEXT",
+      ");",
+    ].join("\n"),
+  );
+  adapter.run(
+    "CREATE INDEX IF NOT EXISTS idx_patterns_type ON patterns(type, confidence DESC);",
+  );
+
+  // Pattern Links - Verknüpfung Tier 1 ↔ Tier 2
+  adapter.run(
+    [
+      "CREATE TABLE IF NOT EXISTS pattern_links (",
+      "  pattern_id TEXT NOT NULL,",
+      "  fact_id TEXT NOT NULL,",
+      "  relation_type TEXT NOT NULL,", // supports, contradicts, example_of
+      "  created_at TEXT NOT NULL,",
+      "  PRIMARY KEY (pattern_id, fact_id),",
+      "  FOREIGN KEY (pattern_id) REFERENCES patterns(id) ON DELETE CASCADE,",
+      "  FOREIGN KEY (fact_id) REFERENCES personal_facts(id) ON DELETE CASCADE",
+      ");",
+    ].join("\n"),
+  );
+
+  // Attitudes - Haltungs-Tracking pro User
+  adapter.run(
+    [
+      "CREATE TABLE IF NOT EXISTS attitudes (",
+      "  user_id TEXT NOT NULL,",
+      "  dimension TEXT NOT NULL,", // warmth, respect, patience, trust
+      "  score REAL NOT NULL DEFAULT 0.0,", // -10 bis +10
+      "  updated_at TEXT NOT NULL,",
+      "  history_json TEXT,", // Array von {score, timestamp, trigger}
+      "  PRIMARY KEY (user_id, dimension)",
+      ");",
+    ].join("\n"),
   );
 }
 
@@ -300,6 +351,64 @@ function writeSqliteUserVersion(adapter: SessionMemorySqliteAdapter, nextVersion
   adapter.run(`PRAGMA user_version = ${nextVersion}`);
 }
 
+function createSqliteSchemaV1(adapter: SessionMemorySqliteAdapter): void {
+  adapter.run(
+    [
+      "CREATE TABLE IF NOT EXISTS session_memory_entries (",
+      "  id TEXT PRIMARY KEY,",
+      "  session_id TEXT NOT NULL,",
+      "  conversation_id TEXT NOT NULL,",
+      "  role TEXT NOT NULL,",
+      "  content TEXT NOT NULL,",
+      "  created_at TEXT NOT NULL,",
+      "  expires_at TEXT,",
+      "  metadata_json TEXT",
+      ");",
+    ].join("\n"),
+  );
+  adapter.run(
+    "CREATE INDEX IF NOT EXISTS idx_session_memory_scope ON session_memory_entries(session_id, conversation_id, created_at);",
+  );
+  adapter.run(
+    "CREATE INDEX IF NOT EXISTS idx_session_memory_expiry ON session_memory_entries(expires_at);",
+  );
+}
+
+function migrateV1ToV2(adapter: SessionMemorySqliteAdapter): void {
+  // Migration: Session-Einträge → Personal Facts
+  const sessionEntries = adapter.all(
+    "SELECT id, session_id, conversation_id, content, created_at, metadata_json FROM session_memory_entries WHERE role = 'user'",
+  );
+  
+  for (const row of sessionEntries) {
+    if (
+      typeof row.id === "string" &&
+      typeof row.session_id === "string" &&
+      typeof row.conversation_id === "string" &&
+      typeof row.content === "string" &&
+      typeof row.created_at === "string"
+    ) {
+      adapter.run(
+        [
+          "INSERT OR IGNORE INTO personal_facts",
+          "(id, content, category, session_id, conversation_id, created_at, zone, relevance_score)",
+          "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        ].join("\n"),
+        [
+          `fact_${row.id}`,
+          row.content,
+          "event",
+          row.session_id,
+          row.conversation_id,
+          row.created_at,
+          "hot",
+          0.5,
+        ],
+      );
+    }
+  }
+}
+
 function ensureSqliteSchema(adapter: SessionMemorySqliteAdapter): void {
   const currentVersion = readSqliteUserVersion(adapter);
   if (currentVersion > SQLITE_SCHEMA_VERSION) {
@@ -310,11 +419,19 @@ function ensureSqliteSchema(adapter: SessionMemorySqliteAdapter): void {
 
   if (currentVersion === 0) {
     createSqliteSchemaV1(adapter);
-    writeSqliteUserVersion(adapter, 1);
+    createSqliteSchemaV2(adapter); // Create v2 tables directly for fresh installs
+    writeSqliteUserVersion(adapter, 2);
     return;
   }
 
   if (currentVersion === 1) {
+    createSqliteSchemaV2(adapter);
+    migrateV1ToV2(adapter);
+    writeSqliteUserVersion(adapter, 2);
+    return;
+  }
+
+  if (currentVersion === 2) {
     return;
   }
 

@@ -55,7 +55,7 @@ function Start-ShinonLocalStack {
 Set-Location -LiteralPath $backendPathLiteral
 Register-EngineEvent PowerShell.Exiting -Action { & $stopLiteral | Out-Null } | Out-Null
 try {
-  & $npmLiteral run dev
+  & $npmLiteral run start
 } finally {
   & $stopLiteral | Out-Null
 }
@@ -72,16 +72,16 @@ try {
 "@
 
   $llamacppScript = Join-Path $repoRoot "ops\scripts\start-llamacpp.ps1"
-  if (-not (Test-Path -LiteralPath $llamacppScript -PathType Leaf)) {
-    throw "llama.cpp Script nicht gefunden: $llamacppScript"
-  }
-
-  Write-Host "Starte llama.cpp Infrastruktur..."
-  try {
-    & $llamacppScript -ModelFile 'qwen2.5-0.5b-instruct-q4_k_m.gguf' -Port 8000 -HealthTimeout 120
-  } catch {
-    Write-Warning "Infrastruktur konnte nicht korrekt gestartet werden: $($_.Exception.Message)"
-    exit 1
+  if (Test-Path -LiteralPath $llamacppScript -PathType Leaf) {
+    Write-Host "Starte llama.cpp Infrastruktur..."
+    try {
+      & $llamacppScript -ModelFile 'qwen2.5-0.5b-instruct-q4_k_m.gguf' -Port 8000 -HealthTimeout 120
+    } catch {
+      Write-Warning "llama.cpp konnte nicht gestartet werden: $($_.Exception.Message)"
+      Write-Host "Fahre ohne llama.cpp fort (Ollama-Modus)..."
+    }
+  } else {
+    Write-Host "llama.cpp Script nicht gefunden, fahre ohne lokales LLM fort..."
   }
 
   Start-Process -FilePath "powershell" -ArgumentList @(

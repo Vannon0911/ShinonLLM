@@ -1,10 +1,19 @@
 "use client";
 
-import { useCallback, useMemo, useState, useEffect } from "react";
+import { useCallback, useMemo, useState, useEffect, useRef } from "react";
 import { Orb, OrbMood } from "./Orb";
+import { ModelSelector, DevDebugPanel, DevProcessingPanel } from "../dev";
+import type { ModelInfo } from "../dev/ModelSelector";
+import "./ChatShell.css";
 
 type ChatRole = "user" | "assistant";
-type ChatModel = "runtime-default" | "llamacpp-qwen-0_5b" | "ollama-default";
+type ChatModel = "runtime-default" | "llamacpp-qwen-0_5b" | "ollama-default" | string;
+
+type ModelOption = {
+  readonly value: string;
+  readonly label: string;
+  readonly isLocal?: boolean;
+};
 
 type ChatMessage = Readonly<{
   id: string;
@@ -66,6 +75,19 @@ type ChatShellProps = Readonly<{
   initialMessages?: ReadonlyArray<ChatMessage>;
   apiBasePath?: string;
   onEvent?: (event: ChatShellEvent) => void;
+}>;
+
+type LogEntry = Readonly<{
+  timestamp: string;
+  type: "info" | "error" | "success" | "request" | "response";
+  message: string;
+}>;
+
+type StoredData = Readonly<{
+  sessionId: string;
+  conversationId: string;
+  messageCount: number;
+  lastUpdated: string;
 }>;
 
 function createStableId(seed: string): string {
@@ -217,12 +239,24 @@ function MessageList({ messages }: { messages: ReadonlyArray<ChatMessage> }) {
 function Composer(props: {
   model: ChatModel;
   onModelChange: (value: ChatModel) => void;
+  availableModels?: ReadonlyArray<ModelInfo>;
   value: string;
   disableInput: boolean;
   disableSubmit: boolean;
   onChange: (value: string) => void;
   onSubmit: () => void;
 }) {
+  // Build options from available models + defaults
+  const options: ModelOption[] = [
+    { value: "runtime-default", label: "Runtime Default" },
+    ...props.availableModels?.map(m => ({ 
+      value: `llamacpp-${m.id}`, 
+      label: `${m.name} (${m.sizeFormatted})`,
+      isLocal: true 
+    })) || [],
+    { value: "ollama-default", label: "Ollama Default" },
+  ];
+
   return (
     <form
       className="chat-shell__composer"
@@ -239,9 +273,9 @@ function Composer(props: {
           onChange={(event) => props.onModelChange(event.currentTarget.value as ChatModel)}
           value={props.model}
         >
-          <option value="runtime-default">Runtime Default</option>
-          <option value="llamacpp-qwen-0_5b">llama.cpp Qwen 0.5B (Local)</option>
-          <option value="ollama-default">Ollama Default</option>
+          {options.map(opt => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
         </select>
       </label>
       <textarea
@@ -286,6 +320,52 @@ export function ChatShell({
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<ChatUIError | null>(null);
   const [currentMood, setCurrentMood] = useState<OrbMood>("neutral");
+  
+  // DEV: Selected model from %APPDATA%
+  const [selectedModel, setSelectedModel] = useState<ModelInfo | null>(null);
+  const [availableModels, setAvailableModels] = useState<ModelInfo[]>([]);
+  const [showModelSelector, setShowModelSelector] = useState(true);
+  
+  // Debug state
+  const [logs, setLogs] = useState<ReadonlyArray<LogEntry>>([]);
+  const [showDebug, setShowDebug] = useState(false);
+  const logsEndRef = useRef<HTMLDivElement>(null);
+
+  // Logging helper with DEV integration
+  const addLog = useCallback((type: LogEntry["type"], message: string) => {
+    setLogs((prev) => [
+      ...prev,
+      Object.freeze({
+        timestamp: new Date().toISOString(),
+        type,
+        message,
+      }),
+    ]);
+    
+    // [DEV] Send to DevDebugPanel
+    const win = window as unknown as { 
+      shinonDebug?: (level: "info" | "warn" | "error" | "debug", component: string, message: string) => void 
+    };
+    if (typeof win.shinonDebug === "function") {
+      win.shinonDebug(type === "error" ? "error" : "info", "ChatShell", message);
+    }
+  }, []);
+
+  // Auto-scroll logs
+  useEffect(() => {
+    logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [logs]);
+
+  // Log session info on mount
+  useEffect(() => {
+    addLog("info", `Session gestartet: ${sessionId}`);
+    addLog("info", `Conversation: ${conversationId}`);
+  }, [sessionId, conversationId, addLog]);
+
+  // Log messages count
+  useEffect(() => {
+    addLog("info", `Messages: ${messages.length}`);
+  }, [messages.length, addLog]);
 
   // Sehr simpler Live-Sentiment-Check auf dem Draft, damit der Orb sofort reagiert
   useEffect(() => {
@@ -349,6 +429,7 @@ export function ChatShell({
 
     setIsSending(true);
     setError(null);
+    addLog("request", `Sende: ${normalizedText.substring(0, 50)}...`);
     emit({ type: "submit", payload });
 
     setMessages((current) => [
@@ -362,6 +443,7 @@ export function ChatShell({
 
     try {
       const response = await sendChatRequest(payload, apiBasePath);
+      addLog("response", `Antwort: ${response.reply.substring(0, 50)}... (${response.source})`);
       const assistantMessage: ChatMessage = {
         id: `${response.requestId}-assistant`,
         role: "assistant",
@@ -384,6 +466,8 @@ export function ChatShell({
           ? caughtError.message.trim()
           : "Chat request failed.";
 
+      addLog("error", `Fehler: ${message}`);
+      
       const nextError: ChatUIError = {
         code: message === "Chat response was invalid" ? "INVALID_RESPONSE" : "REQUEST_FAILED",
         message,
@@ -397,7 +481,7 @@ export function ChatShell({
   }, [apiBasePath, conversationId, draft, emit, isSending, messages, model, sessionId]);
 
   return (
-    <section className="chat-shell" aria-busy={isSending}>
+    <section className="chat-shell" aria-busy={isSending ? "true" : "false"} aria-label="Chat interface">
       <header className="chat-shell__header">
         <h2>Chat mit Shinon</h2>
         <p>{isSending ? "Denkt nach..." : "Bereit."}</p>
@@ -416,6 +500,7 @@ export function ChatShell({
       <Composer
         model={model}
         onModelChange={setModel}
+        availableModels={availableModels}
         disableInput={false}
         disableSubmit={!canSend}
         onChange={setDraft}
@@ -424,6 +509,87 @@ export function ChatShell({
         }}
         value={draft}
       />
+      
+      {/* [DEV] Model Selector - Required Models from local storage */}
+      {showModelSelector && (
+        <div className="dev-model-selector">
+          <div className="dev-model-selector__header">
+            <span className="dev-model-selector__label">
+              [DEV] Model Selection - Required: At least 1 model from ./models/
+            </span>
+            <button
+              type="button"
+              onClick={() => setShowModelSelector(false)}
+              className="dev-model-selector__hide-btn"
+            >
+              Hide
+            </button>
+          </div>
+          <ModelSelector
+            onModelsLoaded={(models) => {
+              setAvailableModels(models);
+              addLog("info", `[DEV] Loaded ${models.length} models from local storage`);
+            }}
+            onModelSelect={(model) => {
+              setSelectedModel(model);
+              addLog("info", `[DEV] Selected model: ${model.name} (${model.sizeFormatted})`);
+            }}
+          />
+          {selectedModel && (
+            <div className="dev-model-selector__active">
+              ✓ Active: {selectedModel.name} {selectedModel.required && "(Required)"}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Debug Toggle */}
+      <button
+        type="button"
+        onClick={() => setShowDebug(!showDebug)}
+        className="dev-debug-toggle"
+      >
+        {showDebug ? "▼ [DEV] Panels ausblenden" : "▲ [DEV] Panels anzeigen"}
+      </button>
+
+      {/* [DEV] Processing Pipeline - WAS verarbeitet wurde */}
+      {showDebug && <DevProcessingPanel />}
+
+      {/* [DEV] Debug Output */}
+      {showDebug && <DevDebugPanel />}
+
+      {/* [DEV] Legacy Debug Panels (WAS gespeichert) */}
+      {showDebug && (
+        <div className="dev-debug-grid">
+          {/* Logs Panel */}
+          <div className="dev-debug-panel">
+            <div className="dev-debug-panel__title">[DEV] 📋 Internal Logs</div>
+            {logs.map((log, i) => (
+              <div key={i} className={`dev-debug-panel__log dev-debug-panel__log--${log.type}`}>
+                [{log.timestamp.split("T")[1].split(".")[0]}] {log.message}
+              </div>
+            ))}
+            <div ref={logsEndRef} />
+          </div>
+
+          {/* WAS gespeichert Panel */}
+          <div className="dev-debug-panel dev-debug-panel--storage">
+            <div className="dev-debug-panel__title">[DEV] 💾 WAS gespeichert</div>
+            <div>Session ID:</div>
+            <div className="dev-debug-panel__muted">{sessionId}</div>
+            <div className="dev-debug-panel__row">Conversation ID:</div>
+            <div className="dev-debug-panel__muted">{conversationId}</div>
+            <div className="dev-debug-panel__row">Messages:</div>
+            <div className="dev-debug-panel__muted">{messages.length} Nachrichten</div>
+            <div className="dev-debug-panel__row">Selected Model:</div>
+            <div className="dev-debug-panel__muted">{selectedModel?.name || "None"}</div>
+            <div className="dev-debug-panel__row">Letzte Antwort:</div>
+            <div className="dev-debug-panel__muted">
+              {messages.filter(m => m.role === "assistant").slice(-1)[0]?.content?.substring(0, 100) || "—"}
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

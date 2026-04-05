@@ -37,6 +37,41 @@ Shinon ist keine freundliche Servicekraft. Sie ist eine Persona mit Gedächtnis,
 
 ---
 
+## Offen: Phase 0 (Kritische Lücken - Status Apr 2026)
+
+### SQLite-Datenbank Status (READ-ONLY)
+
+**Aktuell persistiert (funktioniert):**
+
+- `session_memory_entries` - Nur Chat-Verlauf via `sessionPersistence.ts`
+- Pfad: `%LOCALAPPDATA%\ShinonLLM\session-memory.sqlite`
+- Schema: v1 (nur `session_memory_entries` Tabelle)
+
+**Nicht persistiert (In-Memory only / verloren bei Neustart):**
+
+- `personal_facts` - Tier 1 existiert nur als Type-Definition in `twoTierMemory.ts`
+- `patterns` - Tier 2 existiert nur als Type-Definition in `patterns.ts`
+- `pattern_links` - Verknüpfungen nicht implementiert
+- `attitudes` - Haltungs-Tracking nicht implementiert
+
+**Unimplementierte Module (PLACEHOLDERS):**
+
+- `memory/zones/hotZone.ts` - TODO: Implementiere Hot Zone mit SQLite-Backend
+- `memory/zones/midZone.ts` - TODO: Implementiere Mid Zone mit Score-basierter Selektion
+- `memory/zones/coldZone.ts` - TODO: Implementiere Cold Zone mit Pattern-Extraktion
+- `character/experience/patterns.ts` - `extractPattern()`, `findContradictions()`, `scoreConfidence()` geben nur Defaults zurück
+- `character/experience/twoTierMemory.ts` - `queryTier1()`, `queryTier2()`, `linkTier1ToTier2()` sind leere Stubs
+- `memory/src/longterm/memoryStore.ts` - Reine In-Memory-Implementierung, keine SQLite-Persistenz
+
+### Kritische Blocker für 0.3.0
+
+1. **LongTerm Memory hat kein SQLite-Backend** - Alles fliegt beim Neustart
+2. **Pattern Engine ist Geister-Code** - Schöne Typen, keine Logik
+3. **Memory Zones sind Luftschlösser** - Cold Zone ruft Funktionen die `null`/`[]` returnieren
+4. **Schema v2 existiert nicht** - `PRAGMA user_version` bleibt bei 1
+
+---
+
 ## Offen: Phase 1 (DB Schema v2)
 
 ### SQLite Migration (v1 → v2)
@@ -103,6 +138,7 @@ Shinon ist keine freundliche Servicekraft. Sie ist eine Persona mit Gedächtnis,
   - Frequency + Recency + Consistency
 
 ### Pattern-Typen (MVP)
+
 | Typ | Beispiel | Trigger |
 |-----|----------|---------|
 | `preference` | "Ich mag Pizza" | "mag", "liebe", "hasse" |
@@ -129,6 +165,7 @@ Shinon ist keine freundliche Servicekraft. Sie ist eine Persona mit Gedächtnis,
 - [ ] `trust`: -10 (misstrauisch) bis +10 (vertrauend)
 
 ### Update-Regeln
+
 | Event | Warmth | Respect | Patience | Trust |
 |-------|--------|---------|----------|-------|
 | Inkonsistenz gefunden | -1 | -2 | -2 | -3 |
@@ -156,7 +193,8 @@ Shinon ist keine freundliche Servicekraft. Sie ist eine Persona mit Gedächtnis,
 - [ ] Integration: Relevant Facts → Kontext
 
 ### Prompt-Struktur
-```
+
+```text
 Du bist Shinon. Du hast mit diesem User {{interactionCount}} Interaktionen.
 
 Deine aktuelle Haltung:
@@ -219,6 +257,7 @@ Vor Release müssen alle Gates grün sein:
 - [ ] `npm run test:e2e` → PASS
 
 **Neue Gates (optional für 0.3.0):**
+
 - [ ] Pattern-Engine determinism check
 - [ ] Attitude calculation determinism check
 - [ ] Confrontation scenario E2E test (Anna→Lisa)
@@ -228,6 +267,7 @@ Vor Release müssen alle Gates grün sein:
 ## Dokumentation (Inhalt aus Chat-Session)
 
 ### Besprochene Konzepte
+
 - **Two-Tier Memory**: Schicht 1 (Personal/Fakten) + Schicht 2 (Pattern/Anker)
 - **Hot/Mid/Cold Zones**: Zeitbasierte Zone mit Pattern-Härtung
 - **Decay als Vermenschlichung**: Nicht FIFO, sondern Relevanz-basiert
@@ -237,6 +277,7 @@ Vor Release müssen alle Gates grün sein:
 - **Fail-closed**: Bei Unsicherheit abbrechen, nicht raten
 
 ### Architektur-Entscheidungen
+
 - Lokales LLM (0.5B-7B), keine Cloud-Abhängigkeit
 - SQLite für Persistence
 - Character-System mit festem Core + dynamischen Attitudes
@@ -259,6 +300,29 @@ Vor Release müssen alle Gates grün sein:
 ---
 
 ## Bekannte Fehler (Heute entdeckt)
+
+### Kritisch: Unimplementierte SQLite-Persistenz
+
+**Status: Daten gehen bei Neustart verloren**
+
+| Modul | Datei | Problem | Impact |
+|-------|-------|---------|--------|
+| LongTerm Memory | `memory/src/longterm/memoryStore.ts:229` | Reine In-Memory, kein SQLite | Alle Fakten fliegen bei Restart |
+| Hot Zone | `memory/src/zones/hotZone.ts:32` | TODO: Implementiere Hot Zone | Ungefilterter Session-Zugriff nicht vorhanden |
+| Mid Zone | `memory/src/zones/midZone.ts:31` | TODO: Implementiere Mid Zone | Keine Score-basierte Selektion |
+| Cold Zone | `memory/src/zones/coldZone.ts:36` | TODO: Implementiere Cold Zone | Keine Pattern-Härtung, kein Archiv |
+| Pattern Engine | `character/src/experience/patterns.ts:45` | `extractPattern()` gibt immer `null` | Keine Pattern-Erkennung |
+| Pattern Engine | `character/src/experience/patterns.ts:50` | `findContradictions()` gibt immer `false` | Keine Inkonsistenzerkennung |
+| Pattern Engine | `character/src/experience/patterns.ts:59` | `scoreConfidence()` unimplementiert | Keine Konfidenz-Berechnung |
+| Two-Tier Memory | `character/src/experience/twoTierMemory.ts:37` | `queryTier1()` gibt `null` | Tier 1 nicht abfragbar |
+| Two-Tier Memory | `character/src/experience/twoTierMemory.ts:42` | `queryTier2()` gibt `null` | Tier 2 nicht abfragbar |
+| Two-Tier Memory | `character/src/experience/twoTierMemory.ts:47` | `linkTier1ToTier2()` leer | Keine Verknüpfung möglich |
+
+**Fix-Priorität:**
+1. **HÖCHSTE**: LongTerm Memory SQLite-Backend (Blocker für 0.3.0)
+2. **HOCH**: Pattern Engine Implementierung (Core Feature)
+3. **MITTEL**: Memory Zones mit SQLite-Anbindung
+4. **NIEDRIG**: TypeScript-Syntax-Fixes in Platzhaltern
 
 ### TypeScript-Fehler in Platzhaltern
 - [ ] `character/src/attitudes/tracker.ts`: `readonly history` → `ReadonlyArray` (Syntax-Fehler)

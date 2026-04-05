@@ -6,6 +6,7 @@ import { pathToFileURL } from "node:url";
 
 import { createChatRoute } from "./routes/chat.js";
 import { createHealthRoute } from "./routes/health.js";
+import { scanModels } from "./routes/models.js";
 import {
   createInMemorySessionMemoryPersistence,
   createSqliteSessionMemoryPersistence,
@@ -303,6 +304,37 @@ async function main(): Promise<void> {
 
         writeJson(response, status, chatResponse);
         return;
+      }
+
+      // [DEV] Model Scanner Route - Scans %APPDATA% for .gguf models
+      if (path === "/api/models" || path === "/models") {
+        if (parsed.method !== "GET") {
+          writeJson(response, 405, {
+            ok: false,
+            status: "error",
+            error: {
+              code: "METHOD_NOT_ALLOWED",
+              message: "models route only accepts GET",
+            },
+          });
+          return;
+        }
+
+        try {
+          const result = await scanModels();
+          writeJson(response, result.ok ? 200 : 500, result);
+          return;
+        } catch {
+          writeJson(response, 500, {
+            ok: false,
+            status: "error",
+            error: {
+              code: "INTERNAL_SERVER_ERROR",
+              message: "Model scan failed",
+            },
+          });
+          return;
+        }
       }
 
       writeJson(response, 404, {

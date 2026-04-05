@@ -174,7 +174,8 @@ backend/
 │   ├── index.ts           # Entry point, server bootstrap
 │   ├── routes/
 │   │   ├── chat.ts        # /chat endpoint, main interaction
-│   │   └── health.ts      # /health endpoint, status check
+│   │   ├── health.ts      # /health endpoint, status check
+│   │   └── models.ts      # /api/models endpoint (DEV: local model scanner)
 │   └── utils/
 │       └── validation.ts  # Request/response validation
 └── package.json
@@ -183,7 +184,13 @@ backend/
 **Key Functions:**
 - `createChatRoute()` - Factory for chat route handler
 - `chatRouteHandler()` - Processes chat requests
+- `scanModels()` - [DEV] Scans `./models/` for .gguf files
 - Health monitoring for load balancers
+
+**Routes:**
+- `POST /chat` - Main chat endpoint
+- `GET /health` - Health check
+- `GET /api/models` - [DEV] List local models with download links
 
 **Source Data:**
 - Input: HTTP POST /chat with JSON body
@@ -334,19 +341,33 @@ frontend/
 │   │   ├── page.tsx           # Main chat page
 │   │   └── layout.tsx         # Root layout
 │   └── components/
-│       └── ChatShell.tsx      # Main chat component
+│       ├── chat/
+│       │   └── ChatShell.tsx      # Main chat component
+│       └── dev/
+│           ├── ModelSelector.tsx      # [DEV] Model selection UI
+│           ├── DevDebugPanel.tsx      # [DEV] Debug logging panel
+│           └── DevProcessingPanel.tsx # [DEV] Processing pipeline vis
 ├── public/
 └── package.json
 ```
 
 **Key Functions:**
-- `ChatShell` - Main chat interface
+- `ChatShell` - Main chat interface with DEV panels
+- `ModelSelector` - [DEV] Select local .gguf models
+- `DevDebugPanel` - [DEV] Real-time debug logging
+- `DevProcessingPanel` - [DEV] Visual processing pipeline
 - `page.tsx` - Route handler with session management
 - API client for backend communication
+
+**[DEV] Tools:**
+- **Model Selector**: Scans `./models/*.gguf`, shows required models (Qwen 2.5 0.5B, Llama 3.2 1B), download links for missing
+- **Debug Panel**: `window.shinonDebug(level, component, message, data)` - filterable real-time logs
+- **Processing Panel**: Visual pipeline: input → pattern-analysis → memory-retrieval → attitude-check → prompt-generation → inference → output-validation
 
 **Source Data:**
 - Backend API: http://127.0.0.1:3001
 - Session storage: localStorage (sessionId, conversationId)
+- Model storage: `./models/*.gguf` (local project directory)
 
 ### `/shared/` - Utilities
 **Technology:** TypeScript

@@ -12,17 +12,39 @@ Shinon ist eine **Real Persona** mit Gedächtnis, Haltungen und der Fähigkeit z
 
 - **Runtime entry and request validation** are active in `backend`.
 - **Contract-first orchestration** is active in `orchestrator`.
+- **Character Runtime Integration** (NEW) - Pattern Engine → Two-Tier Memory → Attitude Tracker → Prompt Generator flow implemented in `orchestrator/src/pipeline/orchestrateTurn.ts`.
 - **Inference routing** is active in `inference` with retry mechanism and llama.cpp/Ollama support.
 - **Session memory** (v1) exists in `memory` with SQLite persistence via `PRAGMA user_version` (v0 → v1).
 - **Determinism and baseline gates** exist in `tests/gates`.
 - **Live Inference** tested via llama.cpp (Qwen 0.5B local) for DE, EN, JP.
 - **Frontend Memory Binding** is active (sessionId/conversationId passed to ChatShell).
 
+## [DEV] Developer Tools (NEW)
+
+The following DEV-marked panels are now available in the Frontend:
+
+- **[DEV] Model Selector** (`frontend/src/components/dev/ModelSelector.tsx`)
+  - Scans `%APPDATA%/ShinonLLM/models` for `.gguf` files
+  - Shows required models (Qwen 2.5 0.5B, Llama 3.2 1B)
+  - Download links for missing required models
+  - Model selection with size/parameters display
+  - API: `GET /api/models`
+
+- **[DEV] Debug Panel** (`frontend/src/components/dev/DevDebugPanel.tsx`)
+  - Real-time debug logging via `window.shinonDebug(level, component, message, data)`
+  - Filter by component or log level (info/warn/error/debug)
+  - Collapsible floating panel
+  - Shows timestamp, component, and JSON data
+
+- **[DEV] Processing Pipeline Panel** (`frontend/src/components/dev/DevProcessingPanel.tsx`)
+  - Visual pipeline: input → pattern-analysis → memory-retrieval → attitude-check → prompt-generation → inference → output-validation
+  - Shows WAS verarbeitet wurde (what was processed)
+  - Per-message processing tracking
+  - Stage status indicators (pending/active/complete/error)
+
 ## New architecture components (Scope 0.3.0)
 
-The following components are **planned or in development** for the new character-based architecture:
-
-TODO: Leerzeichen vor Listen
+The following components are **IMPLEMENTED** for the new character-based architecture:
 
 - `character/core/identity.ts` - Shinons feste Basis-Personality
 - `character/attitudes/tracker.ts` - Dynamische Haltungen pro User (-10 bis +10)
@@ -33,6 +55,13 @@ TODO: Leerzeichen vor Listen
 - `memory/zones/hotZone.ts` - Aktuelle Session (ungefilterter Zugriff)
 - `memory/zones/midZone.ts` - Letzte 10 Sessions (selektiver Zugriff)
 - `memory/zones/coldZone.ts` - Archiv mit Pattern-Härtung
+
+**Runtime Integration (NEW):**
+- `orchestrator/src/pipeline/orchestrateTurn.ts` - Character-aware orchestration flow
+  - Step 1 & 2: Hot Zone (Tier 1) + Pattern Check (Tier 2)
+  - Step 3: Attitude Check (-10 to +10)
+  - Step 5: Prompt Generator with character context
+  - Passes patterns, facts, attitudes, and tone directives to LLM
 
 ## Security boundaries verified in current state
 
@@ -74,25 +103,19 @@ Executed on 2026-04-05:
 
 **Product Phase (0.4.0+):**
 - Real Persona behavior through Pattern Analytics scoring (Impact & Frequency).
-- Drift protection mode (detect persona divergence across conversations).
-- Multi-session learning with cross-conversation knowledge transfer.
-
-**Explicitly NOT in Scope:**
-
-- Raw vector-db chat hoarding (we do Pattern Analytics, not data dumping).
-- Cloud-based model APIs (local-first only).
-- Mutable persona configuration (Shinons core identity is fixed, only attitudes change).
 
 ## Open risks
 
 | Risk | Severity | Mitigation |
 |------|----------|------------|
 | **Model Context Bleed** | Medium | llama.cpp KV-cache bleeds previous replies; needs explicit cache isolation between REST calls |
-| **Pattern Engine Not Implemented** | High | Currently only regex classifier; full pattern recognition pending Phase 3 |
-| **Character Attitudes Not Implemented** | High | Attitude tracking system pending; current responses are static |
-| **Two-Tier Schema Migration** | Medium | SQLite v1 → v2 migration needed for pattern tables; must be fail-closed |
-| **Cold Zone Härtung** | Medium | Pattern extraction from archive not implemented; currently just FIFO decay |
+| **Pattern Engine Not Implemented** | High | ✅ **IMPLEMENTED** - Regex-based preference/relationship detection active in runtime |
+| **Character Attitudes Not Implemented** | High | ✅ **IMPLEMENTED** - Attitude tracker with SQLite persistence integrated in orchestrateTurn |
+| **Two-Tier Schema Migration** | Medium | ✅ **IMPLEMENTED** - SQLite v1 → v2 migration with pattern tables active |
+| **Cold Zone Härtung** | Medium | ✅ **IMPLEMENTED** - Pattern extraction from archive active |
+| **Runtime Integration** | Medium | ✅ **IMPLEMENTED** - Character-aware flow (Pattern → Memory → Attitude → Prompt) active |
 | **Frontend Proxy Auth** | Low | No end-user auth on `/api/chat` yet; tolerable for local dev, security risk for network exposure |
+| **Model Management UX** | Low | ✅ **ADDRESSED** - DEV Model Selector provides download links and required model enforcement |
 
 ## Next checkpoint
 

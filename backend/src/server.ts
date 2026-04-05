@@ -1,5 +1,6 @@
 import { createChatRoute } from "./routes/chat.js";
-import { createHealthRoute, type HealthRouteOptions, type HealthRouteResult, type ValidatedHealthRequest } from "./routes/health.js";
+import { createHealthRoute, type HealthRouteOptions, type HealthRouteResult, type ValidatedHealthRequest, type HealthResponseDto } from "./routes/health.js";
+import { scanModels } from "./routes/models.js";
 
 export type ServerRequest = Readonly<{
   method?: string;
@@ -103,14 +104,14 @@ function readRequestId(request: ServerRequest): string | undefined {
   return undefined;
 }
 
-function failClosed<T>(
+function failClosed(
   status: number,
   code: string,
   message: string,
   requestId?: string,
   route?: "chat" | "health",
-  response?: T,
-): ServerResponse<T> {
+  response?: unknown,
+): ServerResponse<ServerResponseEnvelope> {
   return {
     status,
     headers: JSON_HEADERS,
@@ -127,7 +128,7 @@ function failClosed<T>(
   };
 }
 
-function toSuccess<T>(route: "chat" | "health", response: T, requestId?: string, status = 200): ServerResponse<T> {
+function toSuccess(route: "chat" | "health", response: unknown, requestId?: string, status = 200): ServerResponse<ServerResponseEnvelope> {
   return {
     status,
     headers: JSON_HEADERS,
@@ -150,26 +151,21 @@ function isHealthResult(value: unknown): value is HealthRouteResult {
   return typeof value.status === "number" && isPlainObject(value.body) && isPlainObject(value.headers);
 }
 
-function mapHealthResult(result: HealthRouteResult, requestId?: string): ServerResponse<HealthRouteResult["body"]> {
+function mapHealthResult(result: HealthRouteResult, requestId?: string): ServerResponse<HealthResponseDto> {
   if (result.status >= 200 && result.status < 300) {
-    return toSuccess("health", result.body, requestId, result.status);
+    return {
+      status: result.status,
+      headers: result.headers ?? JSON_HEADERS,
+      body: result.body,
+    };
   }
 
   return {
     status: result.status,
     headers: result.headers ?? JSON_HEADERS,
     body: {
+      ...result.body,
       ok: false,
-      status: "error",
-      error: {
-        code: result.body.code,
-        message: result.body.backend.message ?? result.body.backend.code,
-        ...(requestId ? { requestId } : {}),
-      },
-      data: {
-        route: "health",
-        response: result.body,
-      },
     },
   };
 }
@@ -292,6 +288,26 @@ export async function serverMain(
       return mapChatResult(result, requestId);
     } catch {
       return failClosed(500, "INTERNAL_SERVER_ERROR", "Chat route failed", requestId, "chat");
+    }
+  }
+
+  if (path === "/api/models" || path === "/models") {
+    if (method !== "GET") {
+      return failClosed(405, "METHOD_NOT_ALLOWED", "models route only accepts GET", requestId);
+    }
+    
+    try {
+      const result = await scanModels();
+      if (result.ok) {
+        return {
+          status: 200,
+          headers: JSON_HEADERS,
+          body: result,
+        };
+      }
+      return failClosed(500, "MODEL_SCAN_ERROR", result.error, requestId);
+    } catch {
+      return failClosed(500, "INTERNAL_SERVER_ERROR", "Model scan failed", requestId);
     }
   }
 

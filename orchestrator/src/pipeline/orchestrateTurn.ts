@@ -1,4 +1,10 @@
 import { routeBackendCall } from "../../../inference/src/router/backendRouter.js";
+import { extractPattern, type Pattern } from "../../../character/src/experience/patterns.js";
+import { queryTier1, queryTier2 } from "../../../character/src/experience/twoTierMemory.js";
+import { loadAttitudeState, applyAttitudeRules, shouldConfront, formatAttitudeForPrompt, getToneDirective, type AttitudeState } from "../../../character/src/attitudes/tracker.js";
+import { createHotZone } from "../../../memory/src/zones/hotZone.js";
+import { createMidZone } from "../../../memory/src/zones/midZone.js";
+import { createColdZone } from "../../../memory/src/zones/coldZone.js";
 
 export type ChatRole = "system" | "user" | "assistant";
 
@@ -45,6 +51,14 @@ type PromptBundle = Readonly<{
     nextAction: "answer" | "explain" | "propose_patch" | "summarize";
     userStyle: "neutral" | "aggressive" | "cheerful" | "impatient" | "thoughtful";
   }>;
+  // NEW: Character context from runtime thinking
+  characterContext?: Readonly<{
+    patterns: Pattern[];
+    facts: string[];
+    attitudes: AttitudeState | null;
+    confront: boolean;
+    toneDirective: string;
+  }>;
 }>;
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -76,7 +90,7 @@ function stableSerialize(value: unknown, seen: WeakSet<object>): string {
     return String(value);
   }
   if (type === "bigint") {
-    return JSON.stringify(value.toString());
+    return JSON.stringify((value as bigint).toString());
   }
   if (type === "undefined" || type === "function" || type === "symbol") {
     return JSON.stringify(String(value));
@@ -181,6 +195,112 @@ function buildRuntimePlan(input: OrchestrateTurnInput): PromptBundle["runtimePla
   return Object.freeze({ intent: "question", nextAction: "answer", userStyle });
 }
 
+// ============================================================================
+// CHARACTER RUNTIME INTEGRATION (0.3.0)
+// Implements: Pattern Engine → Two-Tier Memory → Attitude Tracker → Prompt
+// ============================================================================
+
+/**
+ * Extract patterns from user input using Pattern Engine.
+ * Step 2 in ARCHITECTURE: Pattern Check (Tier 2)
+ * NOTE: Stub implementation - Pattern Engine expects PersonalFact objects
+ */
+function extractPatternsFromInput(userText: string): Pattern[] {
+  // TODO: Convert userText to PersonalFact and extract patterns
+  // For now, return empty array as stub
+  return [];
+}
+
+/**
+ * Query Two-Tier Memory system.
+ * Step 1 & 2 in ARCHITECTURE: Hot Zone (Tier 1) + Pattern Check (Tier 2)
+ * NOTE: Stub implementation - requires SQLite adapter
+ */
+async function queryCharacterMemory(
+  _sessionId: string,
+  _userText: string,
+): Promise<{ facts: string[]; patterns: Pattern[] }> {
+  // TODO: Implement with actual SQLite adapter
+  // For now, return empty results as stub
+  return { facts: [], patterns: [] };
+}
+
+/**
+ * Load and evaluate attitudes for user.
+ * Step 3 in ARCHITECTURE: Attitude Check (-10 to +10)
+ * NOTE: Stub implementation - requires SQLite adapter
+ */
+async function evaluateAttitudes(
+  _userId: string,
+  _newPatterns: Pattern[],
+): Promise<{ attitudes: AttitudeState | null; shouldConfront: boolean; toneDirective: string }> {
+  // TODO: Load from SQLite and apply rules
+  // For now, return neutral state as stub
+  return { 
+    attitudes: null, 
+    shouldConfront: false, 
+    toneDirective: "NORMAL_INTERACTION: Match user sentiment." 
+  };
+}
+
+/**
+ * Build character-aware prompt with all runtime context.
+ * Step 5 in ARCHITECTURE: Prompt Generator
+ */
+function buildCharacterPrompt(
+  input: OrchestrateTurnInput,
+  characterContext: PromptBundle["characterContext"],
+): PromptBundle {
+  const normalized = normalizeInput(input);
+  const historyBlock = normalized.history.length
+    ? normalized.history
+        .map((entry) => `${entry.role.toUpperCase()}: ${entry.content}`)
+        .join("\n")
+    : "HISTORY: <empty>";
+  
+  const runtimePlan = buildRuntimePlan(normalized);
+  
+  // Build character context block
+  let characterBlock = "";
+  if (characterContext) {
+    const patternsText = characterContext.patterns.length > 0
+      ? `RECOGNIZED_PATTERNS: ${characterContext.patterns.map(p => `${p.type} (${p.confidence.toFixed(2)}): ${p.anchor}`).join("; ")}`
+      : "RECOGNIZED_PATTERNS: none";
+    
+    const factsText = characterContext.facts.length > 0
+      ? `KNOWN_FACTS: ${characterContext.facts.join("; ")}`
+      : "KNOWN_FACTS: none";
+    
+    const confrontText = characterContext.confront
+      ? "MODE: CONFRONTATION - User shows concerning inconsistency."
+      : "MODE: NORMAL";
+    
+    characterBlock = [
+      patternsText,
+      factsText,
+      confrontText,
+      `TONE_DIRECTIVE: ${characterContext.toneDirective}`,
+    ].join("\n");
+  }
+  
+  const prompt = [
+    "SYSTEM: You are Shinon, a character with memory and attitudes. You develop opinions based on observed patterns. State your thoughts in first person.",
+    "",
+    characterBlock,
+    "",
+    `PLAN: intent=${runtimePlan.intent} next_action=${runtimePlan.nextAction} user_style=${runtimePlan.userStyle}`,
+    `USER: ${normalized.userText}`,
+    historyBlock,
+  ].join("\n");
+
+  return Object.freeze({
+    prompt,
+    memorySummary: characterBlock,
+    runtimePlan,
+    characterContext,
+  });
+}
+
 /**
  * Constructs the prompt bundle used by the orchestrator for a single turn.
  *
@@ -278,7 +398,28 @@ function applyGuardrails(input: OrchestrateTurnInput, output: {
 export async function orchestrateTurn(input: OrchestrateTurnInput): Promise<OrchestrateTurnOutput> {
   try {
     const normalized = normalizeInput(input);
-    const promptBundle = buildPrompt(normalized);
+    const sessionId = normalized.request?.sessionId ?? "default";
+    const userId = normalized.request?.conversationId ?? "default";
+    
+    // [NEW] Step 2: Extract patterns from user input
+    const newPatterns = extractPatternsFromInput(normalized.userText);
+    
+    // [NEW] Step 1 & 2: Query Two-Tier Memory (Hot Zone + Tier 2)
+    const memoryResults = await queryCharacterMemory(sessionId, normalized.userText);
+    
+    // [NEW] Step 3: Evaluate attitudes
+    const attitudeResults = await evaluateAttitudes(userId, newPatterns);
+    
+    // [NEW] Step 5: Build character-aware prompt
+    const characterContext = Object.freeze({
+      patterns: [...memoryResults.patterns, ...newPatterns],
+      facts: memoryResults.facts,
+      attitudes: attitudeResults.attitudes,
+      confront: attitudeResults.shouldConfront,
+      toneDirective: attitudeResults.toneDirective,
+    });
+    
+    const promptBundle = buildCharacterPrompt(normalized, characterContext);
 
     const backend = resolveBackend(normalized.memoryContext);
     const fallbackBackend = resolveFallbackBackend(backend, normalized.memoryContext);
@@ -297,6 +438,7 @@ export async function orchestrateTurn(input: OrchestrateTurnInput): Promise<Orch
         options: Object.freeze({
           live: true,
           runtimePlan: promptBundle.runtimePlan,
+          characterContext: promptBundle.characterContext,
         }),
       }),
       Object.freeze({

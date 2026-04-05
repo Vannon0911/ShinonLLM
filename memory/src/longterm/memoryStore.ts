@@ -2,6 +2,11 @@ import { sha256Hex } from "../../../shared/src/utils/hash.js";
 import { stableJson } from "../../../shared/src/utils/stableJson.js";
 import { scoreContext, type ScoreContextCandidate } from "../retrieval/scoreContext.js";
 
+export type LongTermMemorySqliteAdapter = Readonly<{
+  run: (sql: string, params?: ReadonlyArray<unknown>) => { changes?: number } | void;
+  all: (sql: string, params?: ReadonlyArray<unknown>) => ReadonlyArray<Record<string, unknown>>;
+}>;
+
 export type LongTermMemoryEntry = {
   id?: string;
   type?: string;
@@ -257,5 +262,195 @@ export function createLongTermMemoryStore(
         maxResults: retrievalInput.maxResults,
         maxTokens: retrievalInput.maxTokens,
       }),
+  };
+}
+
+function normalizeEntryToFact(entry: LongTermMemoryEntry, index: number): {
+  id: string;
+  content: string;
+  type: string;
+  integrityHash: string;
+  tags?: string[];
+} {
+  const content = toText(entry.content);
+  const id = isNonEmptyString(entry.id) ? entry.id.trim() : `mem_${index}`;
+  const type = isNonEmptyString(entry.type) ? entry.type.trim() : "fact";
+  const integrityHash = sha256Hex({
+    id,
+    type,
+    content: stableJson(content),
+    tags: Array.isArray(entry.tags) ? [...entry.tags] : [],
+    index,
+  });
+  return {
+    id,
+    content,
+    type,
+    integrityHash,
+    ...(Array.isArray(entry.tags) ? { tags: entry.tags.filter(isNonEmptyString) } : {}),
+  };
+}
+
+function rowToEntry(row: Record<string, unknown>): LongTermMemoryEntry & { integrityHash: string } | null {
+  if (!isNonEmptyString(row.id) || !isNonEmptyString(row.content)) {
+    return null;
+  }
+  const integrityHash = isNonEmptyString(row.integrity_hash) ? row.integrity_hash.trim() : "";
+  let tags: string[] | undefined;
+  if (typeof row.tags_json === "string" && row.tags_json.trim().length > 0) {
+    try {
+      const parsed = JSON.parse(row.tags_json);
+      if (Array.isArray(parsed)) {
+        tags = parsed.filter(isNonEmptyString);
+      }
+    } catch {
+      // ignore
+    }
+  }
+  return {
+    id: row.id.trim(),
+    type: isNonEmptyString(row.type) ? row.type.trim() : undefined,
+    content: row.content.trim(),
+    ...(tags ? { tags } : {}),
+    createdAt: isNonEmptyString(row.created_at) ? row.created_at.trim() : undefined,
+    integrityHash,
+  };
+}
+
+export function createSqliteLongTermMemoryStore(
+  adapter: LongTermMemorySqliteAdapter
+): LongTermMemoryStore {
+  if (!isPlainObject(adapter) || typeof adapter.run !== "function" || typeof adapter.all !== "function") {
+    throw {
+      code: "BAD_REQUEST",
+      message: "sqlite long-term memory adapter requires run() and all()",
+    };
+  }
+
+  return {
+    snapshot: (): LongTermMemoryStoreSnapshot => {
+      const rows = adapter.all(
+        "SELECT id, type, content, tags_json, created_at, integrity_hash FROM personal_facts ORDER BY created_at DESC LIMIT 1000"
+      );
+      const entries = rows
+        .map((row) => rowToEntry(row))
+        .filter((entry): entry is LongTermMemoryEntry & { integrityHash: string } => entry !== null);
+      return { entries };
+    },
+
+    upsert: (entry: LongTermMemoryEntry): LongTermMemoryStoreSnapshot => {
+      const normalized = normalizeEntryToFact(entry, Date.now());
+      const now = new Date().toISOString();
+      adapter.run(
+        [
+          "INSERT OR REPLACE INTO personal_facts",
+          "(id, content, category, session_id, conversation_id, created_at, zone, relevance_score, metadata_json)",
+          "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        ].join("\n"),
+        [
+          normalized.id,
+          normalized.content,
+          normalized.type,
+          "default",
+          "default",
+          now,
+          "hot",
+          0.5,
+          JSON.stringify({ integrityHash: normalized.integrityHash, tags: normalized.tags }),
+        ]
+      );
+      return createSqliteLongTermMemoryStore(adapter).snapshot();
+    },
+
+    ingest: (entries: readonly LongTermMemoryEntry[]): LongTermMemoryStoreSnapshot => {
+      const now = new Date().toISOString();
+      for (let i = 0; i < entries.length; i++) {
+        const normalized = normalizeEntryToFact(entries[i], i);
+        adapter.run(
+          [
+            "INSERT OR REPLACE INTO personal_facts",
+            "(id, content, category, session_id, conversation_id, created_at, zone, relevance_score, metadata_json)",
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+          ].join("\n"),
+          [
+            normalized.id,
+            normalized.content,
+            normalized.type,
+            "default",
+            "default",
+            now,
+            "hot",
+            0.5,
+            JSON.stringify({ integrityHash: normalized.integrityHash, tags: normalized.tags }),
+          ]
+        );
+      }
+      return createSqliteLongTermMemoryStore(adapter).snapshot();
+    },
+
+    retrieve: (input: LongTermMemoryRetrievalInput): LongTermMemoryRetrievalOutput => {
+      if (!isNonEmptyString(input.query)) {
+        throw {
+          code: "BAD_REQUEST",
+          message: "createSqliteLongTermMemoryStore requires a non-empty query for retrieval",
+        };
+      }
+
+      const tokenBudget = Number.isFinite(input.maxTokens) && input.maxTokens && input.maxTokens > 0
+        ? Math.floor(input.maxTokens)
+        : 800;
+      const maxResults = Number.isFinite(input.maxResults) && input.maxResults && input.maxResults > 0
+        ? Math.floor(input.maxResults)
+        : 12;
+
+      // Load entries from SQLite for scoring
+      const rows = adapter.all(
+        "SELECT id, type, content, tags_json, created_at, integrity_hash FROM personal_facts WHERE zone = 'hot' OR zone = 'mid' ORDER BY created_at DESC LIMIT ?",
+        [maxResults * 2]
+      );
+      const entries = rows
+        .map((row) => rowToEntry(row))
+        .filter((entry): entry is LongTermMemoryEntry & { integrityHash: string } => entry !== null);
+
+      const ranked = scoreContext({
+        userText: input.query,
+        candidates: entries.map((e) => ({
+          id: e.id,
+          type: e.type,
+          content: e.content,
+          tags: e.tags,
+          createdAt: e.createdAt,
+        })),
+        maxResults,
+      });
+
+      const selected: LongTermMemoryRetrievedEntry[] = [];
+      let usedTokens = 0;
+
+      for (const item of ranked) {
+        const content = toText(item.candidate.content);
+        if (!content) continue;
+
+        const chunkTokens = estimateTokens(content);
+        if (usedTokens + chunkTokens > tokenBudget) break;
+
+        selected.push({
+          id: item.candidate.id,
+          type: item.candidate.type,
+          content,
+          tags: item.candidate.tags,
+          score: item.score,
+        });
+        usedTokens += chunkTokens;
+      }
+
+      return {
+        query: input.query.trim(),
+        entries: selected,
+        tokenBudget,
+        usedTokens,
+        truncated: selected.length < ranked.length,
+      };
+    },
   };
 }
