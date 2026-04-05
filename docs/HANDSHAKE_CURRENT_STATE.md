@@ -22,6 +22,8 @@ Shinon ist eine **Real Persona** mit Gedächtnis, Haltungen und der Fähigkeit z
 
 The following components are **planned or in development** for the new character-based architecture:
 
+TODO: Leerzeichen vor Listen
+
 - `character/core/identity.ts` - Shinons feste Basis-Personality
 - `character/attitudes/tracker.ts` - Dynamische Haltungen pro User (-10 bis +10)
 - `character/experience/patterns.ts` - Pattern-Erkennung & Anker-Bildung
@@ -76,6 +78,7 @@ Executed on 2026-04-05:
 - Multi-session learning with cross-conversation knowledge transfer.
 
 **Explicitly NOT in Scope:**
+
 - Raw vector-db chat hoarding (we do Pattern Analytics, not data dumping).
 - Cloud-based model APIs (local-first only).
 - Mutable persona configuration (Shinons core identity is fixed, only attitudes change).

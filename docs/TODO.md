@@ -7,6 +7,7 @@
 Shinon ist keine freundliche Servicekraft. Sie ist eine Persona mit Gedächtnis, Haltungen und der Fähigkeit, dich zur Rede zu stellen wenn du dich widersprichst.
 
 **Core-Prinzipien:**
+
 1. Runtime denkt, LLM formuliert
 2. Two-Tier Memory (Fakten + Patterns)
 3. Hot/Mid/Cold Zones
@@ -41,6 +42,7 @@ Shinon ist keine freundliche Servicekraft. Sie ist eine Persona mit Gedächtnis,
 ### SQLite Migration (v1 → v2)
 
 **Neue Tabellen:**
+
 - [ ] `personal_facts` - Tier 1 (konkrete Fakten)
   - `id`, `content`, `category`, `created_at`, `session_id`
 - [ ] `patterns` - Tier 2 (Pattern-Anker)
@@ -51,6 +53,7 @@ Shinon ist keine freundliche Servicekraft. Sie ist eine Persona mit Gedächtnis,
   - `user_id`, `dimension`, `score`, `updated_at`, `history_json`
 
 **Migration-Plan:**
+
 1. [ ] Backup existing database
 2. [ ] Create new tables
 3. [ ] Migrate `session_memory_entries` → `personal_facts`
@@ -64,16 +67,19 @@ Shinon ist keine freundliche Servicekraft. Sie ist eine Persona mit Gedächtnis,
 ## Offen: Phase 2 (Zone Management)
 
 ### Hot Zone (Current Session)
+
 - [ ] Implementiere `HotZone.load()` - ungefilterter Zugriff
 - [ ] Implementiere `HotZone.append()` - neue Einträge speichern
 - [ ] Transition zu Mid Zone bei Session-Ende
 
 ### Mid Zone (Last 10 Sessions)
+
 - [ ] Implementiere `MidZone.load()` - Score-basierte Selektion (top 20%)
 - [ ] Implementiere `MidZone.promoteFromHot()` - Aus Hot Zone übernehmen
 - [ ] Implementiere `MidZone.demoteToCold()` - Altes nach Cold Zone verschieben
 
 ### Cold Zone (Archive)
+
 - [ ] Implementiere `ColdZone.archive()` - Sessions archivieren
 - [ ] Implementiere `ColdZone.extractPatterns()` - Pattern-Härtung
 - [ ] Implementiere `ColdZone.loadPatterns()` - Anker abrufen
@@ -88,6 +94,7 @@ Shinon ist keine freundliche Servicekraft. Sie ist eine Persona mit Gedächtnis,
 ## Offen: Phase 3 (Pattern Engine)
 
 ### Pattern-Erkennung
+
 - [ ] Implementiere `extractPattern(fact)`
   - Typ-Erkennung: `preference`, `commitment`, `relationship`, `contradiction`
 - [ ] Implementiere `findContradictions(factA, factB)`
@@ -115,6 +122,7 @@ Shinon ist keine freundliche Servicekraft. Sie ist eine Persona mit Gedächtnis,
 ## Offen: Phase 4 (Attitude Tracker)
 
 ### Haltungs-Dimensionen
+
 - [ ] `warmth`: -10 (kalt) bis +10 (warm)
 - [ ] `respect`: -10 (verachtend) bis +10 (wertschätzend)
 - [ ] `patience`: -10 (genervt) bis +10 (nachsichtig)
@@ -129,6 +137,7 @@ Shinon ist keine freundliche Servicekraft. Sie ist eine Persona mit Gedächtnis,
 | Wiederholte Muster | +1 (positiv) / -1 (negativ) | ±2 | ±1 | ±2 |
 
 ### Confrontation Logic
+
 - [ ] `shouldConfront(state, confidence)`
 - Trigger: `patience < 5` UND `confidence > 0.8`
 - [ ] Implementiere Threshold-Checks
@@ -139,6 +148,7 @@ Shinon ist keine freundliche Servicekraft. Sie ist eine Persona mit Gedächtnis,
 ## Offen: Phase 5 (Prompt Generator)
 
 ### "Shinons Gedanken"-Prompts
+
 - [ ] Template-Engine für Prompt-Generierung
 - [ ] Integration: Attitude-Werte → Tondirektive
 - [ ] Integration: Emotional State → Tondirektive
@@ -172,6 +182,7 @@ Wenn ein Muster mit Konfidenz > 0.8 erkannt wurde, adressiere es explizit.
 ```
 
 ### Confrontation Prompt
+
 - [ ] Spezieller Prompt für Konfrontations-Modus
 - [ ] Template: "Ich muss dich auf etwas ansprechen..."
 - [ ] Referenzierung vergangener Fakten mit Datum
@@ -181,16 +192,19 @@ Wenn ein Muster mit Konfidenz > 0.8 erkannt wurde, adressiere es explizit.
 ## Offen: Phase 6 (Integration)
 
 ### Orchestrator
+
 - [ ] Ersetze `buildRuntimePlan` (aktuell Regex) durch Pattern-Engine
 - [ ] Integriere Attitude-Check in Pipeline
 - [ ] Integriere Prompt-Generator
 
 ### Chat Route
+
 - [ ] Verbinde `sessionPersistence` mit Two-Tier Memory
 - [ ] Speichere Fakten in Tier 1
 - [ ] Extrahiere Patterns nach Session-Ende
 
 ### Backend Router
+
 - [ ] Berücksichtige Attitude für Routing-Entscheidungen
 - [ ] Fail-closed mit menschenleslichen Fehlermeldungen
 

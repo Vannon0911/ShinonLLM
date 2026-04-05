@@ -18,12 +18,14 @@ In practice, this means:
 ## Components (Updated for 0.3.0)
 
 ### Core Runtime
+
 - `backend/`: HTTP boundary, request validation, fail-closed routing.
 - `orchestrator/`: Turn orchestration with character-aware prompt generation.
 - `inference/`: Model execution adapters (llama.cpp, Ollama) and routing.
 - `telemetry/`: Replay support and determinism artifacts.
 
 ### Memory & Character (New in 0.3.0)
+
 - `character/`: Character system with identity, attitudes, and pattern engine.
   - `core/identity.ts`: Shinons fixed base personality
   - `attitudes/tracker.ts`: Dynamic user-specific attitudes (-10 to +10)
@@ -38,6 +40,7 @@ In practice, this means:
 - `memory/tiers/`: Two-tier storage (Personal + Pattern anchors).
 
 ### Supporting
+
 - `frontend/`: Delivery surface (UI), no policy ownership.
 - `tests/`: Unit/integration/e2e and gate checks (contract/replay/baseline).
 - `shared/`: Utils (hashing, serialization) used across modules.
@@ -46,7 +49,7 @@ In practice, this means:
 
 ### Two-Tier System
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │                    TIER 1: PERSONAL                          │
 │  Concrete facts, quotes, events                             │
@@ -67,7 +70,7 @@ In practice, this means:
 
 ### Zone Management
 
-```
+```text
 User Input
     ↓
 ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
@@ -82,7 +85,7 @@ User Input
 
 ## Data Flow (New)
 
-```
+```text
 ┌──────────┐     ┌─────────────┐     ┌──────────────┐
 │  USER    │────→│   INPUT     │────→│    HOT       │
 │  INPUT   │     │ VALIDATION  │     │    ZONE      │
@@ -146,6 +149,7 @@ ShinonLLM treats determinism and contract integrity as release conditions:
 - **Baseline integrity** ensures the expected deterministic baseline is stable across runs.
 
 New for 0.3.0:
+
 - **Pattern gate** (planned): Validates pattern extraction determinism.
 - **Attitude gate** (planned): Ensures attitude calculations are reproducible.
 

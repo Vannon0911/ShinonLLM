@@ -29,6 +29,7 @@ Stores generalized patterns with confidence scores, linked to Tier 1 facts.
 ### Cross-Tier Linking
 
 Patterns link to facts via the `pattern_links` table:
+
 - `pattern_id`: Reference to Tier 2 pattern
 - `fact_id`: Reference to Tier 1 fact
 - `relation_type`: `supports`, `contradicts`, `example_of`
