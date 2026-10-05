@@ -261,6 +261,7 @@ function buildCharacterPrompt(
         .join("\n")
     : "HISTORY: <empty>";
   
+  const memorySummary = summarizeMemory(normalized.memoryContext);
   const runtimePlan = buildRuntimePlan(normalized);
   
   // Build character context block
@@ -294,11 +295,12 @@ function buildCharacterPrompt(
     `PLAN: intent=${runtimePlan.intent} next_action=${runtimePlan.nextAction} user_style=${runtimePlan.userStyle}`,
     `USER: ${normalized.userText}`,
     historyBlock,
+    memorySummary.length > 0 ? `MEMORY: ${memorySummary}` : "MEMORY: <empty>",
   ].join("\n");
 
   return Object.freeze({
     prompt,
-    memorySummary: characterBlock,
+    memorySummary,
     runtimePlan,
     characterContext,
   });
